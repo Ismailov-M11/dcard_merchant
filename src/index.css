@@ -286,11 +286,11 @@ body {
   100%  { transform: translate(0,       0); }
 }
 
-/* Non-multiple durations so orbs never sync; middle-speed (not fast, not slow) */
-.orb-drift-1 { animation: orb-drift-1 19s ease-in-out infinite; }
-.orb-drift-2 { animation: orb-drift-2 16s ease-in-out infinite; }
-.orb-drift-3 { animation: orb-drift-3 23s ease-in-out infinite; }
-.orb-drift-4 { animation: orb-drift-4 17s ease-in-out infinite; }
+/* 33% slower than before — still clearly visible, not too fast */
+.orb-drift-1 { animation: orb-drift-1 28s ease-in-out infinite; }
+.orb-drift-2 { animation: orb-drift-2 24s ease-in-out infinite; }
+.orb-drift-3 { animation: orb-drift-3 34s ease-in-out infinite; }
+.orb-drift-4 { animation: orb-drift-4 26s ease-in-out infinite; }
 
 /* ─── Curtain lift (login → dashboard) ────────────────────────────── */
 @keyframes curtain-up {
@@ -314,6 +314,63 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: rgba(26, 63, 117, 0.38); }
 .dark ::-webkit-scrollbar-thumb { background: rgba(78, 164, 204, 0.20); }
 .dark ::-webkit-scrollbar-thumb:hover { background: rgba(78, 164, 204, 0.38); }
+
+/* ─── Sidebar liquid-pill indicator ────────────────────────────────── */
+/* Moving DOWN: bottom edge leads → bottom corners sharpen, then bounce */
+@keyframes pill-travel-down {
+  0%   { transform: scaleY(1);    border-radius: 1rem; }
+  40%  { transform: scaleY(1.18); border-radius: 1.3rem  1.3rem  0.65rem 0.65rem; }
+  75%  { transform: scaleY(0.92); border-radius: 0.7rem  0.7rem  1.3rem  1.3rem; }
+  100% { transform: scaleY(1);    border-radius: 1rem; }
+}
+/* Moving UP: top edge leads */
+@keyframes pill-travel-up {
+  0%   { transform: scaleY(1);    border-radius: 1rem; }
+  40%  { transform: scaleY(1.18); border-radius: 0.65rem 0.65rem 1.3rem  1.3rem; }
+  75%  { transform: scaleY(0.92); border-radius: 1.3rem  1.3rem  0.7rem  0.7rem; }
+  100% { transform: scaleY(1);    border-radius: 1rem; }
+}
+.pill-travel-down { animation: pill-travel-down var(--pill-dur, 0.28s) ease-in-out both; }
+.pill-travel-up   { animation: pill-travel-up   var(--pill-dur, 0.28s) ease-in-out both; }
+
+/* ─── Page content transitions ──────────────────────────────────────── */
+/* Near (1 step) — subtle vertical float */
+@keyframes page-near     { from { opacity:0; transform: translateY(7px);             } to { opacity:1; transform: none; } }
+@keyframes page-near-rev { from { opacity:0; transform: translateY(-7px);            } to { opacity:1; transform: none; } }
+/* Mid (2-3 steps) — horizontal slide */
+@keyframes page-mid      { from { opacity:0; transform: translateX(18px);            } to { opacity:1; transform: none; } }
+@keyframes page-mid-rev  { from { opacity:0; transform: translateX(-18px);           } to { opacity:1; transform: none; } }
+/* Far (4+ steps) — bigger slide with slight scale */
+@keyframes page-far      { from { opacity:0; transform: translateX(36px) scale(0.97); } to { opacity:1; transform: none; } }
+@keyframes page-far-rev  { from { opacity:0; transform: translateX(-36px) scale(0.97); } to { opacity:1; transform: none; } }
+
+.page-near     { animation: page-near     0.20s cubic-bezier(0.16,1,0.3,1) both; }
+.page-near-rev { animation: page-near-rev 0.20s cubic-bezier(0.16,1,0.3,1) both; }
+.page-mid      { animation: page-mid      0.28s cubic-bezier(0.16,1,0.3,1) both; }
+.page-mid-rev  { animation: page-mid-rev  0.28s cubic-bezier(0.16,1,0.3,1) both; }
+.page-far      { animation: page-far      0.40s cubic-bezier(0.16,1,0.3,1) both; }
+.page-far-rev  { animation: page-far-rev  0.40s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ─── Mouse spotlight glow on cards / tables ────────────────────────── */
+.glow-surface {
+  position: relative;
+}
+.glow-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    150px circle at var(--glow-x, -300px) var(--glow-y, -300px),
+    rgba(78, 164, 204, 0.13),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+.glow-surface:hover::after { opacity: 1; }
 
 /* Tabular numbers */
 .tnum { font-variant-numeric: tabular-nums; }

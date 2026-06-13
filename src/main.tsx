@@ -6,6 +6,10 @@ import './index.css';
 import { AuthProvider } from './features/auth/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
+import { setupMouseGlow } from './lib/mouseGlow';
+
+setupMouseGlow();
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
