@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/AuthContext';
+import { cn } from '@/lib/cn';
 
 const LoginPage = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -18,20 +20,35 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login({ phone: phone || 'demo', password: password || 'demo' });
-      navigate('/', { replace: true });
-    } finally {
+      setLeaving(true); // triggers curtain-up animation
+    } catch {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Decorative orbs */}
-      <div className="glass-orb w-96 h-96 bg-[#1A3F75]/35 -top-24 -left-24 absolute" />
-      <div className="glass-orb w-80 h-80 bg-[#4EA4CC]/15 top-1/4 -right-20 absolute" />
-      <div className="glass-orb w-72 h-72 bg-[#2B5BA8]/25 bottom-10 left-1/4 absolute" />
+    /* Curtain wrapper — covers full screen, lifts up on login */
+    <div
+      className={cn(
+        'fixed inset-0 z-50 bg-background flex items-center justify-center px-4 overflow-hidden',
+        leaving && 'animate-curtain-up',
+      )}
+      onAnimationEnd={leaving ? () => navigate('/', { replace: true }) : undefined}
+    >
+      {/* ── Animated background orbs ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="glass-orb orb-drift-1 w-[480px] h-[480px] bg-[#1A3F75]/30 -top-32 -left-32 absolute" />
+        <div className="glass-orb orb-drift-2 w-[340px] h-[340px] bg-[#4EA4CC]/20 -top-16 -right-24 absolute" />
+        <div className="glass-orb orb-drift-3 w-[400px] h-[400px] bg-[#2B5BA8]/25 -bottom-20 left-1/4 absolute" />
+        <div className="glass-orb orb-drift-4 w-[280px] h-[280px] bg-[#4EA4CC]/14 bottom-16 -right-12 absolute" />
+        {/* Extra smaller accents */}
+        <div
+          className="glass-orb orb-drift-2 w-[200px] h-[200px] bg-[#1A3F75]/18 top-1/2 left-1/2 absolute"
+          style={{ animationDelay: '-10s' }}
+        />
+      </div>
 
-      {/* Card */}
+      {/* ── Login card ── */}
       <div className="glass-strong w-full max-w-sm rounded-3xl p-8 relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -49,6 +66,7 @@ const LoginPage = () => {
               placeholder="+998 90 123 45 67"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              disabled={leaving}
             />
           </div>
           <div className="space-y-2">
@@ -58,11 +76,12 @@ const LoginPage = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={leaving}
             />
           </div>
-          <Button type="submit" className="w-full mt-2 h-11" disabled={loading}>
+          <Button type="submit" className="w-full mt-2 h-11" disabled={loading || leaving}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Войти
+            {leaving ? 'Входим...' : 'Войти'}
           </Button>
         </form>
 
