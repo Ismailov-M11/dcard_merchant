@@ -1,95 +1,72 @@
-import { Card, Col, Progress, Row, Statistic, Table, Tag } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import { useMemo } from 'react';
-import { dashboardData } from '../api/mockData';
+import { useQuery } from '@tanstack/react-query';
+import { ShoppingBag, Tag, Star, Building2 } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
+import { KpiCard } from '@/components/KpiCard';
+import { ErrorState } from '@/components/ErrorState';
+import { Skeleton } from '@/components/ui/skeleton';
+import { fetchMockDashboard } from '@/api/mock';
+import { formatMoney } from '@/lib/money';
 
-const DashboardPage = () => {
-  const branchColumns = useMemo(
-    () => [
-      { title: 'Branch', dataIndex: 'name', key: 'name' },
-      { title: 'City', dataIndex: 'city', key: 'city' },
-      { title: 'Today Redemptions', dataIndex: 'today', key: 'today' },
-      { title: 'Week Trend', dataIndex: 'trend', key: 'trend', render: (trend: number) => <Tag color={trend >= 0 ? 'green' : 'red'}>{trend}%</Tag> },
-      { title: 'Rating', dataIndex: 'rating', key: 'rating' }
-    ],
-    []
-  );
+function pct(current: number, prev: number) {
+  if (!prev) return 0;
+  return ((current - prev) / prev) * 100;
+}
+
+export default function DashboardPage() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: fetchMockDashboard,
+  });
+
+  if (isError) return <ErrorState onRetry={refetch} />;
 
   return (
-    <div className="space-y-6">
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Total redemptions" value={dashboardData.metrics.totalRedemptions} suffix={<Tag color="blue">All time</Tag>} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Today's redemptions"
-              value={dashboardData.metrics.todaysRedemptions}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<ArrowUpOutlined />}
-              suffix="vs yesterday"
+    <div>
+      <PageHeader title="Обзор" description="Сводка по вашему бизнесу за текущий месяц" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+        ) : data ? (
+          <>
+            <KpiCard
+              title="Выручка за месяц"
+              value={formatMoney(data.revenue_month)}
+              delta={pct(data.revenue_month, data.revenue_prev_month)}
+              icon={<ShoppingBag className="h-5 w-5" />}
             />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Active deals" value={dashboardData.metrics.activeDeals} suffix="live" />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Merchant rating"
-              value={dashboardData.metrics.merchantRating}
-              precision={1}
-              valueStyle={{ color: '#faad14' }}
-              suffix="/ 5"
+            <KpiCard
+              title="Заказы за месяц"
+              value={data.orders_month}
+              delta={pct(data.orders_month, data.orders_prev_month)}
+              icon={<Tag className="h-5 w-5" />}
             />
-          </Card>
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col xs={24} lg={14}>
-          <Card title="Branch performance overview" extra={<span>Last 7 days</span>}>
-            <Table
-              size="small"
-              pagination={{ pageSize: 4 }}
-              columns={branchColumns}
-              dataSource={dashboardData.branches}
-              rowKey="id"
+            <KpiCard
+              title="Активные акции"
+              value={data.active_deals}
+              icon={<Tag className="h-5 w-5" />}
             />
-          </Card>
-        </Col>
-        <Col xs={24} lg={10}>
-          <Card title="Deal mix">
-            {dashboardData.dealMix.map((deal) => (
-              <div key={deal.type} className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{deal.label}</span>
-                  <span>{deal.value}%</span>
-                </div>
-                <Progress percent={deal.value} showInfo={false} strokeColor={deal.color} />
-              </div>
-            ))}
-          </Card>
-          <Card title="Alerts" className="mt-4">
-            {dashboardData.alerts.map((alert) => (
-              <div key={alert.id} className="flex items-center justify-between py-2 border-b last:border-none">
-                <div>
-                  <p className="font-medium">{alert.title}</p>
-                  <span className="text-xs text-gray-500">{alert.description}</span>
-                </div>
-                <Tag color={alert.type === 'warning' ? 'gold' : 'red'}>{alert.type}</Tag>
-              </div>
-            ))}
-          </Card>
-        </Col>
-      </Row>
+            <KpiCard
+              title="Средняя оценка"
+              value={`${data.avg_rating.toFixed(1)} ★`}
+              icon={<Star className="h-5 w-5" />}
+            />
+          </>
+        ) : null}
+      </div>
+      {!isLoading && data && (
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <KpiCard
+            title="Всего филиалов"
+            value={data.total_branches}
+            icon={<Building2 className="h-5 w-5" />}
+          />
+          <KpiCard
+            title="Новых отзывов"
+            value={data.new_reviews}
+            icon={<Star className="h-5 w-5" />}
+          />
+        </div>
+      )}
     </div>
   );
-};
-
-export default DashboardPage;
+}

@@ -136,3 +136,110 @@ export interface PartnerSubscriptionDiscount {
   approved_at?: string | null;
   created_at: string;
 }
+
+export interface Paginated<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export type SaleType = 'discount' | 'one_plus_one' | 'exclusive';
+
+export type OrderStatus = 'new' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface Order {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  outlet_id: number;
+  outlet_name: string;
+  deal_id: number;
+  deal_title: string;
+  sale_type: SaleType;
+  status: OrderStatus;
+  total_amount: string;
+  discount_amount: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: string;
+  image?: string | null;
+  is_active: boolean;
+  category?: string | null;
+  created_at: string;
+}
+
+export interface SalesAnalyticsPoint {
+  date: string;
+  revenue: number;
+  orders: number;
+  discount_amount: number;
+}
+
+export interface SalesAnalytics {
+  total_revenue: number;
+  total_orders: number;
+  total_discount: number;
+  avg_order: number;
+  points: SalesAnalyticsPoint[];
+}
+
+export interface TrafficAnalyticsPoint {
+  date: string;
+  views: number;
+  clicks: number;
+  conversions: number;
+}
+
+export interface TrafficAnalytics {
+  total_views: number;
+  total_clicks: number;
+  total_conversions: number;
+  conversion_rate: number;
+  points: TrafficAnalyticsPoint[];
+}
+
+export interface RatingAnalytics {
+  avg_rating: number;
+  total_reviews: number;
+  distribution: { stars: number; count: number }[];
+}
+
+export interface Review {
+  id: number;
+  customer_name: string;
+  rating: number;
+  comment?: string | null;
+  outlet_name: string;
+  deal_title?: string | null;
+  created_at: string;
+  is_replied: boolean;
+  reply?: string | null;
+}
+
+export interface DashboardSummary {
+  revenue_month: number;
+  revenue_prev_month: number;
+  orders_month: number;
+  orders_prev_month: number;
+  active_deals: number;
+  total_branches: number;
+  avg_rating: number;
+  new_reviews: number;
+}
+
+export interface Notification {
+  id: number;
+  title: string;
+  body: string;
+  is_read: boolean;
+  created_at: string;
+  type: 'deal' | 'order' | 'review' | 'system';
+}

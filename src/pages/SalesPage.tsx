@@ -1,0 +1,291 @@
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Plus, Loader2, Pencil } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { fetchMerchantDeals, createDeal, updateDeal, updateDealStatus } from '@/api/deals';
+import { fetchPartners } from '@/api/outlets';
+import { fetchSubscriptionPlans } from '@/api/plans';
+import { fetchPartnerDiscounts, requestPartnerDiscount } from '@/api/partnerDiscounts';
+import type { MerchantDeal, DealStatus, Partner, SubscriptionPlanSummary } from '@/types';
+import { PageHeader } from '@/components/PageHeader';
+import { DataTable } from '@/components/DataTable';
+import { StatusBadge } from '@/components/StatusBadge';
+import { SaleTypeBadge } from '@/components/SaleTypeBadge';
+import { MoneyText } from '@/components/MoneyText';
+import { ErrorState } from '@/components/ErrorState';
+import { SearchInput } from '@/components/SearchInput';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { fmtDate } from '@/lib/dates';
+import { mediaUrl } from '@/lib/assets';
+
+const dealSchema = z.object({
+  partner_id: z.string().min(1, 'Выберите партнёра'),
+  subscription_plan: z.string().min(1, 'Выберите план'),
+  offer_type: z.string().min(1, 'Выберите тип'),
+  price: z.string().optional(),
+  discount_percent: z.string().optional(),
+  start_at: z.string().optional(),
+  end_at: z.string().optional(),
+  title_uz: z.string().optional(),
+  title_ru: z.string().optional(),
+  description_uz: z.string().optional(),
+  description_ru: z.string().optional(),
+});
+type DealFormValues = z.infer<typeof dealSchema>;
+
+const OFFER_TYPES = [
+  { value: 'discount', label: 'Скидка' },
+  { value: 'one_plus_one', label: '1+1' },
+  { value: 'exclusive', label: 'Эксклюзив' },
+];
+
+const STATUS_OPTS: { value: DealStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'Все' },
+  { value: 'pending', label: 'На проверке' },
+  { value: 'active', label: 'Активные' },
+  { value: 'paused', label: 'Приостановленные' },
+  { value: 'rejected', label: 'Отклонённые' },
+];
+
+export default function SalesPage() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all');
+  const [formOpen, setFormOpen] = useState(false);
+  const [editDeal, setEditDeal] = useState<MerchantDeal | null>(null);
+
+  const { data: deals = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ['deals', statusFilter, search],
+    queryFn: () => fetchMerchantDeals({ status: statusFilter, search: search || undefined }),
+  });
+  const { data: partners = [] } = useQuery<Partner[]>({ queryKey: ['partners'], queryFn: fetchPartners });
+  const { data: plans = [] } = useQuery<SubscriptionPlanSummary[]>({ queryKey: ['plans'], queryFn: fetchSubscriptionPlans });
+
+  const form = useForm<DealFormValues>({ resolver: zodResolver(dealSchema) });
+
+  const createMutation = useMutation({
+    mutationFn: (v: DealFormValues) => createDeal({
+      partner_id: Number(v.partner_id),
+      subscription_plan: Number(v.subscription_plan),
+      offer_type: v.offer_type,
+      price: v.price,
+      discount_percent: v.discount_percent ? Number(v.discount_percent) : undefined,
+      start_at: v.start_at,
+      end_at: v.end_at,
+      title_translations: { uz: v.title_uz ?? '', ru: v.title_ru ?? '' },
+      description_translations: { uz: v.description_uz ?? '', ru: v.description_ru ?? '' },
+    }),
+    onSuccess: () => { toast.success('Акция создана'); qc.invalidateQueries({ queryKey: ['deals'] }); setFormOpen(false); form.reset(); },
+    onError: () => toast.error('Ошибка создания'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (v: DealFormValues) => updateDeal(Number(v.partner_id), editDeal!.id, {
+      partner_id: Number(v.partner_id),
+      subscription_plan: Number(v.subscription_plan),
+      offer_type: v.offer_type,
+      price: v.price,
+      discount_percent: v.discount_percent ? Number(v.discount_percent) : undefined,
+      start_at: v.start_at,
+      end_at: v.end_at,
+      title_translations: { uz: v.title_uz ?? '', ru: v.title_ru ?? '' },
+      description_translations: { uz: v.description_uz ?? '', ru: v.description_ru ?? '' },
+    }),
+    onSuccess: () => { toast.success('Акция обновлена'); qc.invalidateQueries({ queryKey: ['deals'] }); setEditDeal(null); },
+    onError: () => toast.error('Ошибка обновления'),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: DealStatus }) => updateDealStatus(id, status),
+    onSuccess: () => { toast.success('Статус изменён'); qc.invalidateQueries({ queryKey: ['deals'] }); },
+    onError: () => toast.error('Ошибка изменения статуса'),
+  });
+
+  const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
+    {
+      accessorKey: 'image', header: '',
+      cell: ({ getValue }) => {
+        const src = mediaUrl(getValue() as string | null);
+        return src ? <img src={src} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted" />;
+      },
+    },
+    { accessorKey: 'title', header: 'Название' },
+    { accessorKey: 'offer_type', header: 'Тип', cell: ({ getValue }) => <SaleTypeBadge type={getValue() as 'discount' | 'one_plus_one' | 'exclusive'} /> },
+    { accessorKey: 'price', header: 'Цена', cell: ({ getValue }) => getValue() ? <MoneyText amount={getValue() as string} /> : '—' },
+    { accessorKey: 'discount_percent', header: 'Скидка %', cell: ({ getValue }) => getValue() ? `${getValue()}%` : '—' },
+    { accessorKey: 'status', header: 'Статус', cell: ({ getValue }) => <StatusBadge status={getValue() as DealStatus} /> },
+    { accessorKey: 'start_at', header: 'С', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
+    { accessorKey: 'end_at', header: 'До', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
+    {
+      id: 'actions', header: '',
+      cell: ({ row }) => {
+        const d = row.original;
+        return (
+          <div className="flex gap-1 items-center">
+            <Button size="icon" variant="ghost" onClick={() => {
+              setEditDeal(d);
+              form.reset({
+                partner_id: String(d.partner),
+                subscription_plan: String(d.subscription_plan),
+                offer_type: d.offer_type,
+                price: d.price ?? '',
+                discount_percent: String(d.discount_percent ?? ''),
+                title_uz: d.title_translations?.uz ?? '',
+                title_ru: d.title_translations?.ru ?? d.title,
+                description_uz: d.description_translations?.uz ?? '',
+                description_ru: d.description_translations?.ru ?? (d.description ?? ''),
+              });
+            }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Switch
+              checked={d.status === 'active'}
+              disabled={statusMutation.isPending || d.status === 'rejected'}
+              onCheckedChange={(checked) => statusMutation.mutate({ id: d.id, status: checked ? 'active' : 'paused' })}
+            />
+          </div>
+        );
+      },
+    },
+  ], [form, statusMutation]);
+
+  if (isError) return <ErrorState onRetry={refetch} />;
+
+  const firstPartnerId = partners[0]?.id;
+
+  const DiscountsTab = () => {
+    const discounts = useQuery({
+      queryKey: ['discounts', firstPartnerId],
+      queryFn: () => fetchPartnerDiscounts(firstPartnerId!),
+      enabled: !!firstPartnerId,
+    });
+    return (
+      <div className="space-y-4">
+        {discounts.data?.map((d) => (
+          <div key={d.id} className="flex items-center justify-between p-3 border rounded-md">
+            <div>
+              <p className="text-sm font-medium">{d.subscription_plan_detail?.name ?? `План ${d.subscription_plan}`}</p>
+              <p className="text-xs text-muted-foreground">Скидка {d.discount_percent}%</p>
+            </div>
+            <StatusBadge status={d.status} />
+          </div>
+        ))}
+        {(!discounts.data || discounts.data.length === 0) && (
+          <p className="text-sm text-muted-foreground text-center py-8">Нет скидок по подпискам</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <PageHeader title="Акции" actions={<Button onClick={() => { setFormOpen(true); form.reset(); }}><Plus className="h-4 w-4 mr-1" />Создать акцию</Button>} />
+      <Tabs defaultValue="deals">
+        <TabsList className="mb-4">
+          <TabsTrigger value="deals">Акции</TabsTrigger>
+          <TabsTrigger value="discounts">Скидки по планам</TabsTrigger>
+        </TabsList>
+        <TabsContent value="deals">
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <SearchInput value={search} onChange={setSearch} className="w-64" />
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
+              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <DataTable columns={columns} data={deals} isLoading={isLoading} />
+        </TabsContent>
+        <TabsContent value="discounts">
+          <DiscountsTab />
+        </TabsContent>
+      </Tabs>
+
+      {/* Create/Edit dialog */}
+      <Dialog open={formOpen || !!editDeal} onOpenChange={(o) => { if (!o) { setFormOpen(false); setEditDeal(null); } }}>
+        <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{editDeal ? 'Редактировать акцию' : 'Новая акция'}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((v) => editDeal ? updateMutation.mutate(v) : createMutation.mutate(v))} className="space-y-4">
+              <FormField control={form.control} name="partner_id" render={({ field }) => (
+                <FormItem><FormLabel>Партнёр</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Выберите партнёра" /></SelectTrigger></FormControl>
+                    <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="subscription_plan" render={({ field }) => (
+                <FormItem><FormLabel>План подписки</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Выберите план" /></SelectTrigger></FormControl>
+                    <SelectContent>{plans.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="offer_type" render={({ field }) => (
+                <FormItem><FormLabel>Тип акции</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Тип" /></SelectTrigger></FormControl>
+                    <SelectContent>{OFFER_TYPES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage /></FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem><FormLabel>Цена (сум)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="discount_percent" render={({ field }) => (
+                  <FormItem><FormLabel>Скидка %</FormLabel><FormControl><Input type="number" min={0} max={100} {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="start_at" render={({ field }) => (
+                  <FormItem><FormLabel>Дата начала</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="end_at" render={({ field }) => (
+                  <FormItem><FormLabel>Дата окончания</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <Tabs defaultValue="ru">
+                <TabsList><TabsTrigger value="ru">RU</TabsTrigger><TabsTrigger value="uz">UZ</TabsTrigger></TabsList>
+                <TabsContent value="ru" className="space-y-3">
+                  <FormField control={form.control} name="title_ru" render={({ field }) => (
+                    <FormItem><FormLabel>Название (RU)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="description_ru" render={({ field }) => (
+                    <FormItem><FormLabel>Описание (RU)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </TabsContent>
+                <TabsContent value="uz" className="space-y-3">
+                  <FormField control={form.control} name="title_uz" render={({ field }) => (
+                    <FormItem><FormLabel>Название (UZ)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="description_uz" render={({ field }) => (
+                    <FormItem><FormLabel>Описание (UZ)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </TabsContent>
+              </Tabs>
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editDeal ? 'Сохранить' : 'Создать'}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

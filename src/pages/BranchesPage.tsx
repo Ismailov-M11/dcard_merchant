@@ -1,348 +1,205 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  message,
-  Popconfirm,
-  Select,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Tag,
-  Typography,
-  Upload
-} from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { createOutlet, deleteOutlet, fetchOutletTypes, fetchOutlets, fetchPartners, updateOutlet, OutletPayload } from '../api/outlets';
-import type { Outlet, OutletType, Partner, OutletLocation } from '../types';
-import LocationPicker from '../components/LocationPicker';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Plus, Pencil, Trash2, Loader2, MapPin } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { createOutlet, deleteOutlet, fetchOutletTypes, fetchOutlets, fetchPartners, updateOutlet, type OutletPayload } from '@/api/outlets';
+import type { Outlet, OutletType, Partner, OutletLocation } from '@/types';
+import { PageHeader } from '@/components/PageHeader';
+import { DataTable } from '@/components/DataTable';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ErrorState } from '@/components/ErrorState';
+import { SearchInput } from '@/components/SearchInput';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import LocationPicker from '@/components/LocationPicker';
 
-type OutletFormValues = {
-  name: string;
-  city: string;
-  address: string;
-  slug: string;
-  partner_id?: number;
-  phone?: string;
-  outlet_type_id?: number | null;
-  is_approved?: boolean;
-};
+const branchSchema = z.object({
+  name: z.string().min(1, 'Введите название'),
+  city: z.string().min(1, 'Введите город'),
+  address: z.string().min(1, 'Введите адрес'),
+  slug: z.string().min(1, 'Введите slug').regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис'),
+  phone: z.string().optional(),
+  partner_id: z.string().min(1, 'Выберите партнёра'),
+  outlet_type_id: z.string().optional(),
+});
+type BranchFormValues = z.infer<typeof branchSchema>;
 
-const BranchesPage = () => {
-  const [form] = Form.useForm<OutletFormValues>();
-  const queryClient = useQueryClient();
-  const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
-  const [locationPoint, setLocationPoint] = useState<OutletLocation | null>(null);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [menuFile, setMenuFile] = useState<File | null>(null);
-  const [menuFileName, setMenuFileName] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<number | 'all'>('all');
+export default function BranchesPage() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
+  const [editOutlet, setEditOutlet] = useState<Outlet | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Outlet | null>(null);
+  const [location, setLocation] = useState<OutletLocation | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const { data: partners = [], isLoading: partnersLoading } = useQuery<Partner[]>({
-    queryKey: ['partners'],
-    queryFn: fetchPartners
+  const { data: outlets = [], isLoading, isError, refetch } = useQuery<Outlet[]>({
+    queryKey: ['outlets', search],
+    queryFn: () => fetchOutlets({ search: search || undefined }),
   });
-  const { data: outletTypes = [] } = useQuery<OutletType[]>({
-    queryKey: ['outlet-types'],
-    queryFn: fetchOutletTypes
-  });
-  const { data: outlets = [], isFetching: outletsFetching } = useQuery<Outlet[]>({
-    queryKey: ['outlets', searchTerm, typeFilter],
-    queryFn: () =>
-      fetchOutlets({
-        search: searchTerm.trim() || undefined,
-        outletTypeId: typeFilter
-      }),
-    enabled: partners.length > 0
-  });
+  const { data: partners = [] } = useQuery<Partner[]>({ queryKey: ['partners'], queryFn: fetchPartners });
+  const { data: types = [] } = useQuery<OutletType[]>({ queryKey: ['outletTypes'], queryFn: fetchOutletTypes });
 
-  useEffect(() => {
-    if (partners.length === 1) {
-      form.setFieldsValue({ partner_id: partners[0].id });
-    }
-  }, [partners, form]);
+  const form = useForm<BranchFormValues>({ resolver: zodResolver(branchSchema) });
 
-  const resetForm = () => {
-    form.resetFields();
-    setEditingOutlet(null);
-    setLocationPoint(null);
-    setMenuFile(null);
-    setMenuFileName(null);
-    if (partners.length === 1) {
-      form.setFieldsValue({ partner_id: partners[0].id });
-    }
-    form.setFieldsValue({ phone: '' });
+  const openCreate = () => { setEditOutlet(null); setLocation(null); setImageFile(null); form.reset(); setFormOpen(true); };
+  const openEdit = (o: Outlet) => {
+    setEditOutlet(o);
+    setLocation(o.location ?? null);
+    setImageFile(null);
+    form.reset({
+      name: o.name, city: o.city, address: o.address, slug: o.slug,
+      phone: o.phone ?? '',
+      partner_id: String(o.partner.id),
+      outlet_type_id: o.outlet_type ? String(o.outlet_type.id) : '',
+    });
+    setFormOpen(true);
   };
 
-  const openCreateModal = () => {
-    if (noPartnersAssigned) {
-      return;
-    }
-    resetForm();
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    resetForm();
-    setModalVisible(false);
-  };
+  const buildPayload = (v: BranchFormValues): OutletPayload => ({
+    name: v.name, city: v.city, address: v.address, slug: v.slug,
+    phone: v.phone,
+    partner_id: Number(v.partner_id),
+    outlet_type_id: v.outlet_type_id ? Number(v.outlet_type_id) : null,
+    location: location ?? undefined,
+  });
 
   const createMutation = useMutation({
-    mutationFn: (values: OutletPayload) => createOutlet(values, null, menuFile),
-    onSuccess: () => {
-      message.success('Branch created');
-      queryClient.invalidateQueries({ queryKey: ['outlets'] });
-      closeModal();
-    },
-    onError: () => message.error('Failed to create branch')
+    mutationFn: (v: BranchFormValues) => createOutlet(buildPayload(v), imageFile),
+    onSuccess: () => { toast.success('Филиал создан'); qc.invalidateQueries({ queryKey: ['outlets'] }); setFormOpen(false); },
+    onError: () => toast.error('Ошибка создания'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (values: OutletPayload & { id: number }) => updateOutlet(values.id, values, null, menuFile),
-    onSuccess: () => {
-      message.success('Branch updated');
-      queryClient.invalidateQueries({ queryKey: ['outlets'] });
-      closeModal();
-    },
-    onError: () => message.error('Failed to update branch')
+    mutationFn: (v: BranchFormValues) => updateOutlet(editOutlet!.id, buildPayload(v), imageFile),
+    onSuccess: () => { toast.success('Филиал обновлён'); qc.invalidateQueries({ queryKey: ['outlets'] }); setFormOpen(false); setEditOutlet(null); },
+    onError: () => toast.error('Ошибка обновления'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteOutlet(id),
-    onSuccess: (_, id) => {
-      message.success('Branch deleted');
-      queryClient.invalidateQueries({ queryKey: ['outlets'] });
-      if (editingOutlet?.id === id) {
-        closeModal();
-      }
-    },
-    onError: () => message.error('Failed to delete branch')
+    onSuccess: () => { toast.success('Филиал удалён'); qc.invalidateQueries({ queryKey: ['outlets'] }); setDeleteTarget(null); },
+    onError: () => toast.error('Ошибка удаления'),
   });
 
-  const handleEdit = (outlet: Outlet) => {
-    setEditingOutlet(outlet);
-    form.setFieldsValue({
-      name: outlet.name,
-      city: outlet.city,
-      address: outlet.address,
-      slug: outlet.slug,
-      phone: outlet.phone ?? '',
-      outlet_type_id: outlet.outlet_type?.id,
-      is_approved: outlet.is_approved,
-      partner_id: outlet.partner.id
-    });
-    setLocationPoint(outlet.location ?? null);
-    setMenuFile(null);
-    setMenuFileName(outlet.menu ? outlet.menu.split('/').pop() ?? 'menu.pdf' : null);
-    setModalVisible(true);
-  };
-
-  const handleSubmit = (values: OutletFormValues) => {
-    if (!values.partner_id) {
-      message.warning('Select a partner first');
-      return;
-    }
-    const payload: OutletPayload = {
-      ...values,
-      partner_id: values.partner_id,
-      phone: values.phone,
-      outlet_type_id: values.outlet_type_id ?? undefined,
-      location: locationPoint ?? undefined
-    };
-    if (editingOutlet) {
-      updateMutation.mutate({ ...payload, id: editingOutlet.id });
-    } else {
-      createMutation.mutate(payload);
-    }
-  };
-
-  const columns: ColumnsType<Outlet> = useMemo(
-    () => [
-      { title: 'Branch', dataIndex: 'name', key: 'name' },
-      { title: 'City', dataIndex: 'city', key: 'city' },
-      { title: 'Address', dataIndex: 'address', key: 'address' },
-      {
-        title: 'Status',
-        key: 'is_approved',
-        render: (_, record) => <Tag color={record.is_approved ? 'green' : 'gold'}>{record.is_approved ? 'Approved' : 'Pending'}</Tag>
+  const columns: ColumnDef<Outlet>[] = useMemo(() => [
+    { accessorKey: 'name', header: 'Название' },
+    { accessorKey: 'city', header: 'Город' },
+    { accessorKey: 'address', header: 'Адрес' },
+    { accessorKey: 'partner', header: 'Партнёр', cell: ({ getValue }) => (getValue() as Partner).name },
+    {
+      accessorKey: 'outlet_type', header: 'Тип',
+      cell: ({ getValue }) => {
+        const t = getValue() as OutletType | null;
+        return t ? <Badge variant="secondary">{t.name}</Badge> : '—';
       },
-      {
-        title: 'Phone',
-        dataIndex: 'phone',
-        key: 'phone',
-        render: (value: string | undefined) => value || '—'
-      },
-      {
-        title: 'Type',
-        dataIndex: ['outlet_type', 'name'],
-        key: 'outlet_type',
-        render: (_, record) => record.outlet_type?.name ?? '—'
-      },
-      {
-        title: 'Actions',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button type="link" onClick={() => handleEdit(record)}>
-              Edit
-            </Button>
-            <Popconfirm title="Delete branch?" onConfirm={() => deleteMutation.mutate(record.id)} okButtonProps={{ loading: deleteMutation.isPending }}>
-              <Button type="link" danger>
-                Delete
-              </Button>
-            </Popconfirm>
-          </Space>
-        )
-      }
-    ],
-    [deleteMutation.isPending]
-  );
+    },
+    {
+      accessorKey: 'location', header: '',
+      cell: ({ getValue }) => getValue() ? <MapPin className="h-4 w-4 text-primary" /> : null,
+    },
+    {
+      id: 'actions', header: '',
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={() => openEdit(row.original)}><Pencil className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(row.original)}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      ),
+    },
+  ], []);
 
-  const noPartnersAssigned = !partnersLoading && partners.length === 0;
+  if (isError) return <ErrorState onRetry={refetch} />;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        {noPartnersAssigned ? (
-          <Typography.Text>No partner assigned. Please contact an administrator.</Typography.Text>
-        ) : (
-          <Space size="large" wrap>
-            <Input.Search
-              placeholder="Search branches"
-              allowClear
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              style={{ minWidth: 200 }}
-            />
-            <Select
-              placeholder="Outlet type"
-              allowClear
-              value={typeFilter}
-              onChange={(value) => setTypeFilter(value ?? 'all')}
-              style={{ minWidth: 180 }}
-              options={[
-                { label: 'All types', value: 'all' },
-                ...outletTypes.map((type) => ({
-                  value: type.id,
-                  label: type.name
-                }))
-              ]}
-            />
-            <Button type="primary" onClick={openCreateModal} disabled={partnersLoading || noPartnersAssigned}>
-              + New branch
-            </Button>
-          </Space>
-        )}
-      </Card>
+    <div>
+      <PageHeader title="Филиалы" actions={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Добавить</Button>} />
+      <div className="mb-4">
+        <SearchInput value={search} onChange={setSearch} className="w-64" />
+      </div>
+      <DataTable columns={columns} data={outlets} isLoading={isLoading} />
 
-      {!noPartnersAssigned && (
-        <Card title="Branches">
-          {outletsFetching ? (
-            <div className="flex justify-center py-10">
-              <Spin />
-            </div>
-          ) : (
-            <Table columns={columns} dataSource={outlets} rowKey="id" pagination={{ pageSize: 6 }} />
-          )}
-        </Card>
-      )}
-
-      <Modal
-        title={editingOutlet ? `Edit branch: ${editingOutlet.name}` : 'Add new branch'}
-        open={isModalVisible && !noPartnersAssigned}
-        onCancel={closeModal}
-        footer={null}
-        destroyOnHidden
-        forceRender
-        width={720}
-      >
-        <Form layout="vertical" form={form} onFinish={handleSubmit}>
-          <Form.Item label="Partner" name="partner_id" rules={[{ required: true }]}>
-            <Select placeholder="Select partner" options={partners.map((partner) => ({ value: partner.id, label: partner.name }))} />
-          </Form.Item>
-          <Form.Item label="Branch name" name="name" rules={[{ required: true }]}>
-            <Input placeholder="Downtown Hub" />
-          </Form.Item>
-          <Form.Item label="City" name="city" rules={[{ required: true }]}>
-            <Input placeholder="Tashkent" />
-          </Form.Item>
-          <Form.Item label="Address" name="address" rules={[{ required: true }]}>
-            <Input placeholder="Street and building info" />
-          </Form.Item>
-          <Form.Item label="Phone" name="phone">
-            <Input placeholder="+998 90 123 45 67" />
-          </Form.Item>
-          <Form.Item label="Slug" name="slug" rules={[{ required: true }]}>
-            <Input placeholder="downtown-hub" />
-          </Form.Item>
-          <Form.Item label="Outlet type" name="outlet_type_id">
-            <Select
-              allowClear
-              placeholder="Select type"
-              options={outletTypes.map((type) => ({
-                value: type.id,
-                label: type.name
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="Approved" name="is_approved" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item label="Map location">
-            <LocationPicker
-              value={locationPoint}
-              onChange={setLocationPoint}
-              onAddressChange={(data) => {
-                if (data?.address) {
-                  form.setFieldsValue({ address: data.address });
-                }
-                if (data?.city) {
-                  form.setFieldsValue({ city: data.city });
-                }
-              }}
-            />
-            {locationPoint ? (
-              <Typography.Text type="secondary">
-                Selected: {locationPoint.lat.toFixed(5)}, {locationPoint.lng.toFixed(5)}
-              </Typography.Text>
-            ) : (
-              <Typography.Text type="secondary">Optional: tap on the map to pin a branch.</Typography.Text>
-            )}
-          </Form.Item>
-          <Form.Item label="Menu (PDF)">
-            <Space direction="vertical">
-              {menuFileName && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Current: {menuFileName}</Typography.Text>}
-              <Upload
-                beforeUpload={(file) => { setMenuFile(file); setMenuFileName(file.name); return false; }}
-                showUploadList={false}
-                maxCount={1}
-                accept="application/pdf"
-              >
-                <Button icon={<UploadOutlined />}>Upload menu PDF</Button>
-              </Upload>
-            </Space>
-          </Form.Item>
-          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            {editingOutlet && (
-              <Button onClick={closeModal} disabled={createMutation.isPending || updateMutation.isPending}>
-                Cancel edit
+      <Dialog open={formOpen} onOpenChange={(o) => { if (!o) { setFormOpen(false); setEditOutlet(null); } }}>
+        <DialogContent className="max-w-xl overflow-y-auto max-h-[90vh]">
+          <DialogHeader><DialogTitle>{editOutlet ? 'Редактировать филиал' : 'Новый филиал'}</DialogTitle></DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((v) => editOutlet ? updateMutation.mutate(v) : createMutation.mutate(v))} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem><FormLabel>Название</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="slug" render={({ field }) => (
+                  <FormItem><FormLabel>Slug</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="city" render={({ field }) => (
+                  <FormItem><FormLabel>Город</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="phone" render={({ field }) => (
+                  <FormItem><FormLabel>Телефон</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="address" render={({ field }) => (
+                <FormItem><FormLabel>Адрес</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="partner_id" render={({ field }) => (
+                <FormItem><FormLabel>Партнёр</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Выберите партнёра" /></SelectTrigger></FormControl>
+                    <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="outlet_type_id" render={({ field }) => (
+                <FormItem><FormLabel>Тип</FormLabel>
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Тип (необязательно)" /></SelectTrigger></FormControl>
+                    <SelectContent>{types.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage /></FormItem>
+              )} />
+              <div>
+                <p className="text-sm font-medium mb-2">Фото</p>
+                <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Местоположение</p>
+                <LocationPicker
+                  value={location}
+                  onChange={setLocation}
+                  onAddressChange={(payload) => {
+                    if (payload?.address) form.setValue('address', payload.address);
+                    if (payload?.city) form.setValue('city', payload.city);
+                  }}
+                />
+              </div>
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editOutlet ? 'Сохранить' : 'Создать'}
               </Button>
-            )}
-            <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>
-              {editingOutlet ? 'Update branch' : 'Create branch'}
-            </Button>
-          </Space>
-        </Form>
-      </Modal>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Удалить филиал?"
+        description={`Филиал «${deleteTarget?.name}» будет удалён.`}
+        confirmLabel="Удалить"
+        destructive
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
     </div>
   );
-};
-
-export default BranchesPage;
+}

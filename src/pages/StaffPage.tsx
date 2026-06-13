@@ -1,334 +1,221 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-  message
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { fetchOutlets } from '../api/outlets';
-import type { Outlet } from '../types';
-import { addStaffMember, deleteStaffMember, fetchStaff, updateStaffMember, updateStaffPassword, type StaffMember } from '../api/staff';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Loader2, Plus, Pencil, Trash2, KeyRound } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { fetchOutlets } from '@/api/outlets';
+import { addStaffMember, deleteStaffMember, fetchStaff, updateStaffMember, updateStaffPassword, type StaffMember } from '@/api/staff';
+import type { Outlet } from '@/types';
+import { PageHeader } from '@/components/PageHeader';
+import { DataTable } from '@/components/DataTable';
+import { SearchInput } from '@/components/SearchInput';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ErrorState } from '@/components/ErrorState';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const staffRoleOptions = [
-  { value: 'manager', label: 'Manager' },
-  { value: 'cashier', label: 'Cashier' },
-  { value: 'validator', label: 'Scanner' }
+const ROLE_OPTIONS = [
+  { value: 'manager', label: 'Менеджер' },
+  { value: 'cashier', label: 'Кассир' },
+  { value: 'validator', label: 'Сканер' },
 ];
 
-type StaffFormValues = {
-  phone: string;
-  full_name?: string;
-  outlet_id: number;
-  staff_roles: string[];
-};
+const createSchema = z.object({
+  phone: z.string().min(9, 'Введите телефон'),
+  full_name: z.string().optional(),
+  outlet_id: z.string().min(1, 'Выберите филиал'),
+  staff_roles: z.string().min(1, 'Выберите роль'),
+});
+type CreateValues = z.infer<typeof createSchema>;
 
-type StaffEditValues = {
-  phone: string;
-  full_name?: string;
-  staff_roles: string[];
-  outlet_id: number;
-};
+const passwordSchema = z.object({
+  password: z.string().min(6, 'Минимум 6 символов'),
+});
+type PasswordValues = z.infer<typeof passwordSchema>;
 
-const StaffPage = () => {
-  const [form] = Form.useForm<StaffFormValues>();
-  const [passwordForm] = Form.useForm<{ password: string }>();
-  const [editForm] = Form.useForm<StaffEditValues>();
-  const queryClient = useQueryClient();
-  const [outletFilter, setOutletFilter] = useState<number | 'all'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [passwordModalStaff, setPasswordModalStaff] = useState<StaffMember | null>(null);
-  const [editModalStaff, setEditModalStaff] = useState<StaffMember | null>(null);
-  const [createModalVisible, setCreateModalVisible] = useState(false);
+export default function StaffPage() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [outletFilter, setOutletFilter] = useState<string>('all');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
+  const [passwordStaff, setPasswordStaff] = useState<StaffMember | null>(null);
+  const [deleteStaff, setDeleteStaff] = useState<StaffMember | null>(null);
 
-  const { data: outlets = [], isLoading: outletsLoading } = useQuery<Outlet[]>({
-    queryKey: ['outlets'],
-    queryFn: () => fetchOutlets()
-  });
-  const { data: staff = [], isFetching: staffLoading } = useQuery<StaffMember[]>({
-    queryKey: ['staff', outletFilter, searchTerm],
-    queryFn: () =>
-      fetchStaff({
-        outletId: outletFilter,
-        search: searchTerm.trim() || undefined
-      })
+  const { data: outlets = [] } = useQuery<Outlet[]>({ queryKey: ['outlets'], queryFn: () => fetchOutlets() });
+  const { data: staff = [], isLoading, isError, refetch } = useQuery<StaffMember[]>({
+    queryKey: ['staff', outletFilter, search],
+    queryFn: () => fetchStaff({ outletId: outletFilter === 'all' ? 'all' : Number(outletFilter), search: search || undefined }),
   });
 
-  const branchOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    outlets.forEach((outlet) => map.set(outlet.id, outlet.name));
-    staff.forEach((member) => {
-      if (!map.has(member.outlet_id)) {
-        map.set(member.outlet_id, member.outlet_name);
-      }
-    });
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, [outlets, staff]);
+  const createForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
+  const passwordForm = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema) });
+  const editForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
 
   const createMutation = useMutation({
-    mutationFn: (values: StaffFormValues) =>
-      addStaffMember(values.outlet_id, {
-        phone: values.phone,
-        staff_roles: values.staff_roles,
-        full_name: values.full_name
-      }),
-    onSuccess: () => {
-      message.success('Staff member invited');
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-      form.resetFields(['phone', 'staff_roles', 'full_name']);
-      setCreateModalVisible(false);
-    },
-    onError: (err: any) => {
-      const detail = err?.response?.data?.detail || err?.response?.data?.data?.detail;
-      message.error(detail || 'Failed to add staff member');
-    }
-  });
-
-  const passwordMutation = useMutation({
-    mutationFn: ({ staffId, password }: { staffId: number; password: string }) => updateStaffPassword(staffId, password),
-    onSuccess: () => {
-      message.success('Password updated');
-      setPasswordModalStaff(null);
-      passwordForm.resetFields();
-    },
-    onError: () => message.error('Failed to update password')
+    mutationFn: (v: CreateValues) => addStaffMember(Number(v.outlet_id), { phone: v.phone, full_name: v.full_name, staff_roles: [v.staff_roles] }),
+    onSuccess: () => { toast.success('Сотрудник добавлен'); qc.invalidateQueries({ queryKey: ['staff'] }); setCreateOpen(false); createForm.reset(); },
+    onError: (err: unknown) => { const d = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail; toast.error(d ?? 'Ошибка'); },
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ staffId, payload }: { staffId: number; payload: { phone?: string; full_name?: string; staff_roles?: string[]; outlet_id?: number } }) =>
-      updateStaffMember(staffId, payload),
-    onSuccess: () => {
-      message.success('Staff updated');
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-      setEditModalStaff(null);
-      editForm.resetFields();
-    },
-    onError: (err: any) => {
-      const detail = err?.response?.data?.detail || err?.response?.data?.data?.detail;
-      message.error(detail || 'Failed to update staff');
-    }
+    mutationFn: (v: CreateValues) => updateStaffMember(editStaff!.id, { phone: v.phone, full_name: v.full_name, staff_roles: [v.staff_roles], outlet_id: Number(v.outlet_id) }),
+    onSuccess: () => { toast.success('Данные обновлены'); qc.invalidateQueries({ queryKey: ['staff'] }); setEditStaff(null); },
+    onError: () => toast.error('Ошибка обновления'),
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: (v: PasswordValues) => updateStaffPassword(passwordStaff!.id, v.password),
+    onSuccess: () => { toast.success('Пароль обновлён'); setPasswordStaff(null); passwordForm.reset(); },
+    onError: () => toast.error('Ошибка обновления пароля'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (staffId: number) => deleteStaffMember(staffId),
-    onSuccess: () => {
-      message.success('Staff member removed');
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-    },
-    onError: (err: any) => {
-      const detail = err?.response?.data?.detail || err?.response?.data?.data?.detail;
-      message.error(detail || 'Failed to remove staff member');
-    }
+    mutationFn: (id: number) => deleteStaffMember(id),
+    onSuccess: () => { toast.success('Сотрудник удалён'); qc.invalidateQueries({ queryKey: ['staff'] }); setDeleteStaff(null); },
+    onError: () => toast.error('Ошибка удаления'),
   });
 
-  useEffect(() => {
-    if (branchOptions.length === 1) {
-      form.setFieldsValue({ outlet_id: branchOptions[0].value });
-      if (outletFilter === 'all') {
-        setOutletFilter(branchOptions[0].value);
-      }
-    }
-  }, [branchOptions, form, outletFilter]);
-
-  const noOutlets = !outletsLoading && branchOptions.length === 0;
-
-  const handleCreateStaff = (values: StaffFormValues) => {
-    if (!values.outlet_id) {
-      message.warning('Select a branch to assign staff');
-      return;
-    }
-    createMutation.mutate(values);
-  };
-
-  const columns: ColumnsType<StaffMember> = [
-    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+  const columns: ColumnDef<StaffMember>[] = useMemo(() => [
+    { accessorKey: 'phone', header: 'Телефон' },
+    { accessorKey: 'full_name', header: 'Имя', cell: ({ getValue }) => (getValue() as string) || '—' },
+    { accessorKey: 'outlet_name', header: 'Филиал' },
     {
-      title: 'Full name',
-      dataIndex: 'full_name',
-      key: 'full_name',
-      render: (value: string | undefined) => value || '—'
-    },
-    { title: 'Branch', dataIndex: 'outlet_name', key: 'outlet_name' },
-    { title: 'Partner', dataIndex: 'partner_name', key: 'partner_name' },
-    {
-      title: 'Roles',
-      dataIndex: 'staff_roles',
-      key: 'staff_roles',
-      render: (roles: string[]) => roles.map((role) => <Tag key={role}>{role}</Tag>)
+      accessorKey: 'staff_roles', header: 'Роли',
+      cell: ({ getValue }) => (
+        <div className="flex gap-1 flex-wrap">
+          {((getValue() as string[]) ?? []).map((r) => <Badge key={r} variant="secondary">{ROLE_OPTIONS.find(o => o.value === r)?.label ?? r}</Badge>)}
+        </div>
+      ),
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            onClick={() => {
-              setEditModalStaff(record);
-              editForm.setFieldsValue({
-                phone: record.phone,
-                full_name: record.full_name,
-                staff_roles: record.staff_roles,
-                outlet_id: record.outlet_id
-              });
-            }}
-          >
-            Edit
+      id: 'actions', header: '',
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={() => { setEditStaff(row.original); editForm.reset({ phone: row.original.phone, full_name: row.original.full_name, outlet_id: String(row.original.outlet_id), staff_roles: row.original.staff_roles[0] ?? '' }); }}>
+            <Pencil className="h-4 w-4" />
           </Button>
-          <Button type="link" onClick={() => setPasswordModalStaff(record)}>
-            Password
+          <Button size="icon" variant="ghost" onClick={() => setPasswordStaff(row.original)}>
+            <KeyRound className="h-4 w-4" />
           </Button>
-          <Popconfirm
-            title="Remove staff member?"
-            description={`Are you sure you want to remove ${record.full_name || record.phone}?`}
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes, remove"
-            cancelText="Cancel"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" danger>
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      )
-    }
-  ];
+          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteStaff(row.original)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ], [editForm]);
+
+  if (isError) return <ErrorState onRetry={refetch} />;
+
+  const outletOptions = outlets.map((o) => ({ value: String(o.id), label: o.name }));
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <Space size="large" wrap>
-          <Input.Search
-            placeholder="Search by name or phone"
-            allowClear
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            style={{ minWidth: 200 }}
-          />
-          <Select
-            value={outletFilter}
-            placeholder="Filter by branch"
-            style={{ minWidth: 200 }}
-            onChange={(value) => setOutletFilter(value)}
-            options={[{ label: 'All branches', value: 'all' }, ...branchOptions]}
-            loading={outletsLoading}
-          />
-          <Button type="primary" onClick={() => setCreateModalVisible(true)} disabled={noOutlets}>
-            + Add staff
-          </Button>
-        </Space>
-      </Card>
+    <div>
+      <PageHeader
+        title="Сотрудники"
+        actions={<Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Добавить</Button>}
+      />
+      <div className="flex gap-3 mb-4">
+        <SearchInput value={search} onChange={setSearch} className="w-64" placeholder="Поиск по телефону / имени" />
+        <Select value={outletFilter} onValueChange={setOutletFilter}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Все филиалы" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все филиалы</SelectItem>
+            {outletOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <DataTable columns={columns} data={staff} isLoading={isLoading} />
 
-      <Card title="Staff directory">
-        {noOutlets ? (
-          <Typography.Text>No branches available. Please create a branch first.</Typography.Text>
-        ) : (
-          <Table rowKey="id" columns={columns} dataSource={staff} loading={staffLoading} pagination={{ pageSize: 8 }} />
-        )}
-      </Card>
+      {/* Create */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Добавить сотрудника</DialogTitle></DialogHeader>
+          <StaffForm form={createForm} outletOptions={outletOptions} onSubmit={createForm.handleSubmit((v) => createMutation.mutate(v))} isPending={createMutation.isPending} />
+        </DialogContent>
+      </Dialog>
 
-      <Modal
-        title="Add staff account"
-        open={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
-        footer={null}
-        destroyOnHidden
-      >
-        <Form layout="vertical" form={form} onFinish={handleCreateStaff}>
-          <Form.Item label="Phone" name="phone" rules={[{ required: true }]}>
-            <Input placeholder="+998..." />
-          </Form.Item>
-          <Form.Item label="Full name" name="full_name">
-            <Input placeholder="John Doe" />
-          </Form.Item>
-          <Form.Item label="Branch" name="outlet_id" rules={[{ required: true }]}>
-            <Select placeholder="Select branch" options={branchOptions} loading={outletsLoading} />
-          </Form.Item>
-          <Form.Item label="Permissions" name="staff_roles" rules={[{ required: true, message: 'Select at least one permission' }]}>
-            <Select mode="multiple" options={staffRoleOptions} placeholder="Select permissions" />
-          </Form.Item>
-          <Space>
-            <Button htmlType="reset">Reset</Button>
-            <Button type="primary" htmlType="submit" loading={createMutation.isPending}>
-              Invite staff
-            </Button>
-          </Space>
-        </Form>
-      </Modal>
-      <Modal
-        title={`Change password: ${passwordModalStaff?.phone ?? ''}`}
-        open={Boolean(passwordModalStaff)}
-        onCancel={() => setPasswordModalStaff(null)}
-        onOk={() => passwordForm.submit()}
-        confirmLoading={passwordMutation.isPending}
-        okText="Update password"
-      >
-        <Form
-          layout="vertical"
-          form={passwordForm}
-          onFinish={(values) => {
-            if (passwordModalStaff) {
-              passwordMutation.mutate({ staffId: passwordModalStaff.id, password: values.password });
-            }
-          }}
-        >
-          <Form.Item
-            label="New password"
-            name="password"
-            rules={[
-              { required: true, message: 'Password required' },
-              { min: 6, message: 'At least 6 characters' }
-            ]}
-          >
-            <Input.Password placeholder="Enter new password" />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        title={`Edit staff: ${editModalStaff?.phone ?? ''}`}
-        open={Boolean(editModalStaff)}
-        onCancel={() => setEditModalStaff(null)}
-        onOk={() => editForm.submit()}
-        confirmLoading={editMutation.isPending}
-      >
-        <Form
-          layout="vertical"
-          form={editForm}
-          onFinish={(values) => {
-            if (editModalStaff) {
-              editMutation.mutate({ staffId: editModalStaff.id, payload: values });
-            }
-          }}
-        >
-          <Form.Item label="Phone" name="phone" rules={[{ required: true }]}>
-            <Input placeholder="+998..." />
-          </Form.Item>
-          <Form.Item label="Full name" name="full_name">
-            <Input placeholder="John Doe" />
-          </Form.Item>
-          <Form.Item label="Branch" name="outlet_id" rules={[{ required: true }]}>
-            <Select options={branchOptions} />
-          </Form.Item>
-          <Form.Item label="Permissions" name="staff_roles" rules={[{ required: true }]}>
-            <Select mode="multiple" options={staffRoleOptions} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* Edit */}
+      <Dialog open={!!editStaff} onOpenChange={(o) => !o && setEditStaff(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Редактировать сотрудника</DialogTitle></DialogHeader>
+          <StaffForm form={editForm} outletOptions={outletOptions} onSubmit={editForm.handleSubmit((v) => editMutation.mutate(v))} isPending={editMutation.isPending} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Password */}
+      <Dialog open={!!passwordStaff} onOpenChange={(o) => !o && setPasswordStaff(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Изменить пароль</DialogTitle></DialogHeader>
+          <Form {...passwordForm}>
+            <form onSubmit={passwordForm.handleSubmit((v) => passwordMutation.mutate(v))} className="space-y-4">
+              <FormField control={passwordForm.control} name="password" render={({ field }) => (
+                <FormItem><FormLabel>Новый пароль</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button type="submit" disabled={passwordMutation.isPending}>
+                {passwordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Сохранить
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteStaff}
+        onOpenChange={(o) => !o && setDeleteStaff(null)}
+        title="Удалить сотрудника?"
+        description={`Сотрудник ${deleteStaff?.full_name ?? deleteStaff?.phone} будет удалён.`}
+        confirmLabel="Удалить"
+        destructive
+        onConfirm={() => deleteStaff && deleteMutation.mutate(deleteStaff.id)}
+      />
     </div>
   );
-};
+}
 
-export default StaffPage;
+function StaffForm({ form, outletOptions, onSubmit, isPending }: {
+  form: ReturnType<typeof useForm<CreateValues>>;
+  outletOptions: { value: string; label: string }[];
+  onSubmit: (e: React.FormEvent) => void;
+  isPending: boolean;
+}) {
+  return (
+    <Form {...form}>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <FormField control={form.control} name="phone" render={({ field }) => (
+          <FormItem><FormLabel>Телефон</FormLabel><FormControl><Input placeholder="+998..." {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="full_name" render={({ field }) => (
+          <FormItem><FormLabel>Имя</FormLabel><FormControl><Input placeholder="Алишер Каримов" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="outlet_id" render={({ field }) => (
+          <FormItem><FormLabel>Филиал</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Выберите филиал" /></SelectTrigger></FormControl>
+              <SelectContent>{outletOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="staff_roles" render={({ field }) => (
+          <FormItem><FormLabel>Роль</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Выберите роль" /></SelectTrigger></FormControl>
+              <SelectContent>{ROLE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <FormMessage /></FormItem>
+        )} />
+        <Button type="submit" disabled={isPending}>
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Сохранить
+        </Button>
+      </form>
+    </Form>
+  );
+}

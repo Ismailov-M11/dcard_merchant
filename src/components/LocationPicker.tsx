@@ -1,7 +1,7 @@
 import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
-import { Button, Typography } from 'antd';
 import { useCallback, useMemo } from 'react';
-import type { OutletLocation } from '../types';
+import { Button } from '@/components/ui/button';
+import type { OutletLocation } from '@/types';
 
 type LocationPickerProps = {
   value?: OutletLocation | null;
@@ -14,9 +14,7 @@ const defaultCenter: [number, number] = [41.2995, 69.2401];
 const LocationPicker = ({ value = null, onChange = () => {}, onAddressChange }: LocationPickerProps) => {
   const apiKey = import.meta.env.VITE_YANDEX_MAPS_KEY ?? '';
   const center = useMemo<[number, number]>(() => {
-    if (value) {
-      return [value.lat, value.lng];
-    }
+    if (value) return [value.lat, value.lng];
     return defaultCenter;
   }, [value]);
 
@@ -28,7 +26,7 @@ const LocationPicker = ({ value = null, onChange = () => {}, onAddressChange }: 
           apikey: apiKey,
           geocode: `${coords[1]},${coords[0]}`,
           format: 'json',
-          lang: 'ru_RU'
+          lang: 'ru_RU',
         });
         const response = await fetch(`https://geocode-maps.yandex.ru/1.x/?${params.toString()}`);
         const data = await response.json();
@@ -38,32 +36,32 @@ const LocationPicker = ({ value = null, onChange = () => {}, onAddressChange }: 
         let city: string | undefined;
         const components = first?.metaDataProperty?.GeocoderMetaData?.Address?.Components;
         if (Array.isArray(components)) {
-          const locality = components.find((component: any) => component.kind === 'locality');
-          const area = components.find((component: any) => component.kind === 'area');
+          const locality = components.find((c: { kind: string }) => c.kind === 'locality');
+          const area = components.find((c: { kind: string }) => c.kind === 'area');
           city = locality?.name || area?.name;
         }
         onAddressChange({ address: address ?? undefined, city });
-      } catch (error) {
+      } catch {
         onAddressChange(null);
       }
     },
-    [apiKey, onAddressChange]
+    [apiKey, onAddressChange],
   );
 
   const handleMapClick = useCallback(
-    (event: any) => {
+    (event: { get: (key: string) => [number, number] }) => {
       const coords = event.get('coords');
       if (!coords) return;
       const next = { lat: coords[0], lng: coords[1] };
       onChange(next);
       resolveAddress([coords[0], coords[1]]);
     },
-    [onChange, resolveAddress]
+    [onChange, resolveAddress],
   );
 
   return (
     <div className="space-y-2">
-      <div className="h-64 border rounded overflow-hidden">
+      <div className="h-64 border rounded-md overflow-hidden">
         <YMaps query={{ apikey: apiKey, lang: 'en_US' }}>
           <Map
             defaultState={{ center, zoom: value ? 14 : 12 }}
@@ -77,9 +75,9 @@ const LocationPicker = ({ value = null, onChange = () => {}, onAddressChange }: 
         </YMaps>
       </div>
       <div className="flex items-center justify-between">
-        <Typography.Text type="secondary">Tap on the map to set the branch location</Typography.Text>
-        <Button size="small" onClick={() => onChange(null)} disabled={!value}>
-          Clear location
+        <span className="text-sm text-muted-foreground">Нажмите на карту, чтобы указать местоположение</span>
+        <Button size="sm" variant="outline" onClick={() => onChange(null)} disabled={!value}>
+          Сбросить
         </Button>
       </div>
     </div>
