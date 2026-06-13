@@ -25,7 +25,7 @@ export function DataTable<TData>({ columns, data, isLoading, options }: DataTabl
   });
 
   return (
-    <div className="rounded-md border overflow-hidden">
+    <div className="glass-table glow-surface rounded-3xl overflow-hidden">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (

@@ -83,7 +83,7 @@ export function Sidebar() {
         <nav className="relative px-3 space-y-0.5">
           {/* Liquid sliding indicator */}
           <div
-            className={cn('absolute left-0 right-0 rounded-2xl bg-[#1A3F75] shadow-md shadow-[#1A3F75]/20', travelCls)}
+            className={cn('absolute left-1 right-1 rounded-2xl bg-[#1A3F75] shadow-md shadow-[#1A3F75]/20', travelCls)}
             style={{
               top: pill.top,
               height: pill.height,
