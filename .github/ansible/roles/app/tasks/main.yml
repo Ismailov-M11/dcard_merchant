@@ -1,0 +1,96 @@
+---
+- name: Make sure the home directory
+  ansible.builtin.file:
+    dest: "{{ app_home }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy http nginx proxy configuration for domain
+  ansible.builtin.template:
+    dest: "/etc/nginx/sites-available/{{ app_domain }}"
+    src: http.j2
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable http nginx proxy configuration by creating symlink in sites-enabled
+  ansible.builtin.file:
+    dest: "/etc/nginx/sites-enabled/{{ app_domain }}"
+    src: "/etc/nginx/sites-available/{{ app_domain }}"
+    state: link
+
+- name: Reload nginx to apply changes
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+
+- name: Create letsencrypt certificate
+  ansible.builtin.command: "certbot certonly -n --webroot -w /var/www/letsencrypt -m {{ admin_email }} --agree-tos -d {{ app_domain }}"
+  args:
+    creates: "/etc/letsencrypt/live/{{ app_domain }}"
+
+- name: Add letsencrypt cronjob for cert renewal
+  ansible.builtin.cron:
+    name: "{{ app_domain }}_renewal"
+    job: "certbot certonly -n --webroot -w /var/www/letsencrypt -m {{ admin_email }} --agree-tos -d {{ app_domain }}"
+    minute: "0"
+    hour: "0"
+    day: "1"
+    month: "*/2"
+    weekday: "*"
+
+- name: Copy https nginx configuration
+  ansible.builtin.template:
+    dest: "/etc/nginx/sites-available/{{ app_domain }}"
+    src: https.j2
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable https nginx configuration by creating symlink in sites-enabled
+  ansible.builtin.file:
+    dest: "/etc/nginx/sites-enabled/{{ app_domain }}"
+    src: "/etc/nginx/sites-available/{{ app_domain }}"
+    state: link
+
+- name: Reload nginx to apply changes
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+
+- name: Deploy application
+  tags: [never, deploy]
+  block:
+    - name: Copy build archive
+      ansible.builtin.copy:
+        src: "../../build.tar.gz"
+        dest: "/tmp/{{ project_name }}-{{ project_service }}-{{ app_env }}-build.tar.gz"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Remove the old www dir directory
+      ansible.builtin.file:
+        path: "{{ app_home }}/www"
+        state: absent
+
+    - name: Recreate the home directory
+      ansible.builtin.file:
+        path: "{{ app_home }}/www"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Unzip archive to web app root path
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ project_name }}-{{ project_service }}-{{ app_env }}-build.tar.gz"
+        dest: "{{ app_home }}/www"
+        remote_src: true
+
+    - name: Remove the tmp build file
+      ansible.builtin.file:
+        path: "/tmp/{{ project_name }}-{{ project_service }}-{{ app_env }}-build.tar.gz"
+        state: absent

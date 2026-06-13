@@ -1,0 +1,4 @@
+
+app_env: prod
+app_domain: "merchant.{{ project_domain }}"
+app_home: "{{ project_home }}-{{ app_env }}"

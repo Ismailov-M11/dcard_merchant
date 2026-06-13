@@ -1,0 +1,6 @@
+admin_email: aknbdev@gmail.com
+
+project_domain: dcard.uz
+project_name: dcard
+project_service: merchant
+project_home: "/opt/dcard/{{ project_service }}"

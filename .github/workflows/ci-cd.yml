@@ -1,0 +1,60 @@
+name: 'CI/CD'
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/ansible/**'
+
+env:
+  ENVIRONMENT: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install required nodejs dependencies
+        run: npm i
+
+      - name: Import Secrets from Vault
+        id: vault
+        uses: hashicorp/vault-action@v2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: jwt
+          role: ${{ secrets.VAULT_ROLE }}
+          secrets: |
+            kv/data/dcard/merchant/${{ env.ENVIRONMENT }}/app * ;
+            kv/data/dcard/vps * ;
+
+      - name: Build application code
+        run: npm run build
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${VPS_SSH_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${VPS_HOST} >> ~/.ssh/known_hosts
+
+      - name: Deploy static website
+        run: |
+          rsync -azP --delete \
+            dist \
+            ${VPS_USER}@${VPS_HOST}:${SERVICE_HOME}/
+          
+          ssh ${VPS_USER}@${VPS_HOST} bash -s "${SERVICE_HOME}" < .github/scripts/deploy.sh
+
+      - name: Clear ssh key
+        run: |
+          rm -rf ~/.ssh/id_rsa

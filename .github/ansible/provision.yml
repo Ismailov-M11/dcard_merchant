@@ -1,0 +1,7 @@
+---
+- name: Provisioning server
+  hosts: app
+  become: true
+  roles:
+    - nginx
+    - certbot

@@ -1,0 +1,6 @@
+---
+- name: Deploying application to server
+  hosts: app
+  become: true
+  roles:
+    - app
