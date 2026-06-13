@@ -6,17 +6,13 @@ import './index.css';
 import { AuthProvider } from './features/auth/AuthContext';
 import { QueryProvider } from './providers/QueryProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
-import { CurtainProvider } from './providers/CurtainProvider';
-
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
       <QueryProvider>
         <AuthProvider>
           <BrowserRouter>
-            <CurtainProvider>
-              <App />
-            </CurtainProvider>
+            <App />
           </BrowserRouter>
         </AuthProvider>
       </QueryProvider>

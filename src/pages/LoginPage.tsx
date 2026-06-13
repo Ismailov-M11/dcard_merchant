@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useCurtain } from '@/providers/CurtainProvider';
+import { startLoginTransition, endLoginTransition } from '@/lib/loginTransition';
 
 const LoginPage = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { login } = useAuth();
-  const { launch } = useCurtain();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,38 +20,45 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login({ phone: phone || 'demo', password: password || 'demo' });
-      // Launch the global curtain; navigate fires after animation ends.
-      // The curtain lives outside the route tree so it survives the redirect.
-      launch(() => navigate('/', { replace: true }));
+      // Block App.tsx redirect guard so LoginPage stays mounted during animation
+      startLoginTransition();
+      setLeaving(true);
     } catch {
       setLoading(false);
     }
   };
 
+  const handleAnimationEnd = () => {
+    endLoginTransition();
+    navigate('/', { replace: true });
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center px-4 overflow-hidden bg-background">
-      {/* ── Animated background orbs ── */}
+    <div
+      className={`fixed inset-0 flex items-center justify-center px-4 overflow-hidden bg-background${leaving ? ' animate-curtain-up' : ''}`}
+      onAnimationEnd={leaving ? handleAnimationEnd : undefined}
+    >
+      {/* ── Animated background orbs — slow, desynchronised ── */}
       <div className="absolute inset-0 pointer-events-none">
         <div
-          className="absolute rounded-full orb-drift-1 w-[580px] h-[580px] -top-48 -left-48"
-          style={{ background: 'rgba(26,63,117,0.55)', filter: 'blur(42px)', opacity: 0.85 }}
+          className="absolute rounded-full orb-drift-1 w-[600px] h-[600px] -top-48 -left-48"
+          style={{ background: 'rgba(26,63,117,0.55)', filter: 'blur(42px)', opacity: 0.85, animationDelay: '-7s' }}
         />
         <div
-          className="absolute rounded-full orb-drift-2 w-[440px] h-[440px] -top-16 -right-32"
-          style={{ background: 'rgba(78,164,204,0.48)', filter: 'blur(38px)', opacity: 0.80, animationDelay: '-5s' }}
+          className="absolute rounded-full orb-drift-2 w-[460px] h-[460px] -top-16 -right-32"
+          style={{ background: 'rgba(78,164,204,0.48)', filter: 'blur(38px)', opacity: 0.80, animationDelay: '-14s' }}
         />
         <div
-          className="absolute rounded-full orb-drift-3 w-[500px] h-[500px] -bottom-28 left-1/3"
-          style={{ background: 'rgba(43,91,168,0.52)', filter: 'blur(44px)', opacity: 0.78, animationDelay: '-2s' }}
+          className="absolute rounded-full orb-drift-3 w-[520px] h-[520px] -bottom-28 left-1/3"
+          style={{ background: 'rgba(43,91,168,0.52)', filter: 'blur(44px)', opacity: 0.78, animationDelay: '-19s' }}
         />
         <div
-          className="absolute rounded-full orb-drift-4 w-[340px] h-[340px] bottom-10 -right-20"
-          style={{ background: 'rgba(78,164,204,0.42)', filter: 'blur(36px)', opacity: 0.82, animationDelay: '-9s' }}
+          className="absolute rounded-full orb-drift-4 w-[360px] h-[360px] bottom-10 -right-20"
+          style={{ background: 'rgba(78,164,204,0.44)', filter: 'blur(36px)', opacity: 0.82, animationDelay: '-11s' }}
         />
-        {/* Extra small accent */}
         <div
-          className="absolute rounded-full orb-drift-1 w-[220px] h-[220px] top-1/2 left-1/2"
-          style={{ background: 'rgba(26,63,117,0.38)', filter: 'blur(30px)', opacity: 0.70, animationDelay: '-13s' }}
+          className="absolute rounded-full orb-drift-1 w-[240px] h-[240px] top-1/2 left-1/2"
+          style={{ background: 'rgba(26,63,117,0.38)', filter: 'blur(30px)', opacity: 0.70, animationDelay: '-25s' }}
         />
       </div>
 
@@ -72,7 +79,7 @@ const LoginPage = () => {
               placeholder="+998 90 123 45 67"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              disabled={loading}
+              disabled={loading || leaving}
             />
           </div>
           <div className="space-y-2">
@@ -82,10 +89,10 @@ const LoginPage = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={loading || leaving}
             />
           </div>
-          <Button type="submit" className="w-full mt-2 h-11" disabled={loading}>
+          <Button type="submit" className="w-full mt-2 h-11" disabled={loading || leaving}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Войти
           </Button>

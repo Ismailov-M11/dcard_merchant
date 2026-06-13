@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/shell/AppShell';
 import { PARTNER_ROLES, useAuth } from '@/features/auth/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isLoginTransition } from '@/lib/loginTransition';
 
 const LoginPage      = lazy(() => import('@/pages/LoginPage'));
 const DashboardPage  = lazy(() => import('@/pages/DashboardPage'));
@@ -49,7 +50,7 @@ const App = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route path="/login" element={(user && !isLoginTransition()) ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/" element={user ? <AppShell /> : <Navigate to="/login" replace />}>
           <Route index element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />

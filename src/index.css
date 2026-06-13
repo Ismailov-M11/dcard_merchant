@@ -250,38 +250,46 @@ body {
   /* opacity controlled per-element */
 }
 
-/* ─── Floating orb animations (large movements, fast loops) ───────── */
+/* ─── Floating orb animations — slow, organic, non-repeating rhythm ── */
 @keyframes orb-drift-1 {
-  0%, 100% { transform: translate(0,      0); }
-  25%       { transform: translate(210px, -170px); }
-  50%       { transform: translate(-130px, 240px); }
-  75%       { transform: translate(280px,   80px); }
+  0%    { transform: translate(0,       0); }
+  13%   { transform: translate(130px,  -95px); }
+  37%   { transform: translate(-105px,  205px); }
+  58%   { transform: translate(265px,   55px); }
+  79%   { transform: translate(-75px,  -145px); }
+  100%  { transform: translate(0,       0); }
 }
 
 @keyframes orb-drift-2 {
-  0%, 100% { transform: translate(0,      0); }
-  33%       { transform: translate(-250px, 180px); }
-  66%       { transform: translate(190px, -210px); }
+  0%    { transform: translate(0,       0); }
+  29%   { transform: translate(-205px,  115px); }
+  61%   { transform: translate(145px,  -225px); }
+  100%  { transform: translate(0,       0); }
 }
 
 @keyframes orb-drift-3 {
-  0%, 100% { transform: translate(0,      0); }
-  20%       { transform: translate(160px,  220px); }
-  45%       { transform: translate(-210px, -110px); }
-  65%       { transform: translate(240px, -170px); }
-  85%       { transform: translate(-110px, 190px); }
+  0%    { transform: translate(0,       0); }
+  11%   { transform: translate(85px,   175px); }
+  31%   { transform: translate(-180px,  -75px); }
+  52%   { transform: translate(225px,  -155px); }
+  73%   { transform: translate(-95px,   215px); }
+  89%   { transform: translate(155px,    45px); }
+  100%  { transform: translate(0,       0); }
 }
 
 @keyframes orb-drift-4 {
-  0%, 100% { transform: translate(0,      0); }
-  30%       { transform: translate(-200px, -230px); }
-  65%       { transform: translate(230px,  160px); }
+  0%    { transform: translate(0,       0); }
+  23%   { transform: translate(-235px, -115px); }
+  47%   { transform: translate(175px,   185px); }
+  71%   { transform: translate(-125px,   75px); }
+  100%  { transform: translate(0,       0); }
 }
 
-.orb-drift-1 { animation: orb-drift-1  10s ease-in-out infinite; }
-.orb-drift-2 { animation: orb-drift-2  14s ease-in-out infinite; }
-.orb-drift-3 { animation: orb-drift-3   9s ease-in-out infinite; }
-.orb-drift-4 { animation: orb-drift-4  18s ease-in-out infinite; }
+/* Different prime-ish durations so orbs never fully sync */
+.orb-drift-1 { animation: orb-drift-1 38s ease-in-out infinite; }
+.orb-drift-2 { animation: orb-drift-2 29s ease-in-out infinite; }
+.orb-drift-3 { animation: orb-drift-3 44s ease-in-out infinite; }
+.orb-drift-4 { animation: orb-drift-4 33s ease-in-out infinite; }
 
 /* ─── Curtain lift (login → dashboard) ────────────────────────────── */
 @keyframes curtain-up {
