@@ -18,12 +18,17 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Block App.tsx redirect guard BEFORE any await that triggers setUser —
+    // this guarantees LoginPage stays mounted regardless of React's render timing.
+    startLoginTransition();
     try {
       await login({ phone: phone || 'demo', password: password || 'demo' });
-      // Block App.tsx redirect guard so LoginPage stays mounted during animation
-      startLoginTransition();
+      // Hold spinner visible for 0.5s, then trigger the page lift.
+      await new Promise<void>((r) => setTimeout(r, 500));
       setLeaving(true);
     } catch {
+      // On failure, unblock the redirect guard and restore the form.
+      endLoginTransition();
       setLoading(false);
     }
   };
@@ -38,7 +43,7 @@ const LoginPage = () => {
       className={`fixed inset-0 flex items-center justify-center px-4 overflow-hidden bg-background${leaving ? ' animate-curtain-up' : ''}`}
       onAnimationEnd={leaving ? handleAnimationEnd : undefined}
     >
-      {/* ── Animated background orbs — slow, desynchronised ── */}
+      {/* ── Animated background orbs ── */}
       <div className="absolute inset-0 pointer-events-none">
         <div
           className="absolute rounded-full orb-drift-1 w-[600px] h-[600px] -top-48 -left-48"
@@ -46,19 +51,19 @@ const LoginPage = () => {
         />
         <div
           className="absolute rounded-full orb-drift-2 w-[460px] h-[460px] -top-16 -right-32"
-          style={{ background: 'rgba(78,164,204,0.48)', filter: 'blur(38px)', opacity: 0.80, animationDelay: '-14s' }}
+          style={{ background: 'rgba(78,164,204,0.48)', filter: 'blur(38px)', opacity: 0.80, animationDelay: '-6s' }}
         />
         <div
           className="absolute rounded-full orb-drift-3 w-[520px] h-[520px] -bottom-28 left-1/3"
-          style={{ background: 'rgba(43,91,168,0.52)', filter: 'blur(44px)', opacity: 0.78, animationDelay: '-19s' }}
+          style={{ background: 'rgba(43,91,168,0.52)', filter: 'blur(44px)', opacity: 0.78, animationDelay: '-11s' }}
         />
         <div
           className="absolute rounded-full orb-drift-4 w-[360px] h-[360px] bottom-10 -right-20"
-          style={{ background: 'rgba(78,164,204,0.44)', filter: 'blur(36px)', opacity: 0.82, animationDelay: '-11s' }}
+          style={{ background: 'rgba(78,164,204,0.44)', filter: 'blur(36px)', opacity: 0.82, animationDelay: '-4s' }}
         />
         <div
           className="absolute rounded-full orb-drift-1 w-[240px] h-[240px] top-1/2 left-1/2"
-          style={{ background: 'rgba(26,63,117,0.38)', filter: 'blur(30px)', opacity: 0.70, animationDelay: '-25s' }}
+          style={{ background: 'rgba(26,63,117,0.38)', filter: 'blur(30px)', opacity: 0.70, animationDelay: '-14s' }}
         />
       </div>
 
