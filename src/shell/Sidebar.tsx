@@ -7,12 +7,12 @@ export function Sidebar() {
   return (
     <aside className="w-60 shrink-0 glass-sidebar flex flex-col h-full">
       {/* Logo */}
-      <div className="h-14 flex items-center px-5 border-b border-[#4EA4CC]/[0.08]">
+      <div className="h-14 flex items-center px-5 border-b border-[#1A3F75]/10">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-2xl bg-[#1A3F75]/80 flex items-center justify-center shadow-lg shadow-[#1A3F75]/30 border border-[#4EA4CC]/20">
+          <div className="h-8 w-8 rounded-2xl bg-[#1A3F75] flex items-center justify-center shadow-lg shadow-[#1A3F75]/25">
             <span className="text-white text-xs font-bold tracking-wider">D</span>
           </div>
-          <span className="text-white font-semibold text-sm tracking-wide">DCard Merchant</span>
+          <span className="text-foreground font-semibold text-sm tracking-wide">DCard Merchant</span>
         </div>
       </div>
 
@@ -27,8 +27,8 @@ export function Sidebar() {
                 cn(
                   'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-[#1A3F75]/55 text-white border border-[#4EA4CC]/20 shadow-sm shadow-[#1A3F75]/20'
-                    : 'text-white/50 hover:bg-[#1A3F75]/25 hover:text-white/90',
+                    ? 'bg-[#1A3F75] text-white shadow-sm shadow-[#1A3F75]/20'
+                    : 'text-foreground/60 hover:bg-[#1A3F75]/12 hover:text-foreground',
                 )
               }
             >
@@ -39,7 +39,7 @@ export function Sidebar() {
         </nav>
       </ScrollArea>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#4EA4CC]/15 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#1A3F75]/20 to-transparent" />
     </aside>
   );
 }
