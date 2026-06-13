@@ -4,21 +4,27 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4EA4CC]/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default:
+          'bg-[#1A3F75]/90 text-white shadow-lg shadow-[#1A3F75]/30 hover:bg-[#2B5BA8] border border-[#4EA4CC]/25 backdrop-blur-sm',
+        destructive:
+          'bg-red-500/75 text-white shadow-lg shadow-red-500/20 hover:bg-red-500/90 border border-red-400/30',
+        outline:
+          'border border-[#4EA4CC]/25 bg-[#1A3F75]/15 text-white/85 shadow-sm hover:bg-[#1A3F75]/30 hover:text-white backdrop-blur-sm',
+        secondary:
+          'bg-white/[0.08] text-white/85 shadow-sm hover:bg-white/[0.14] border border-white/[0.10]',
+        ghost:
+          'text-white/70 hover:bg-[#1A3F75]/30 hover:text-white',
+        link:
+          'text-[#4EA4CC] underline-offset-4 hover:underline hover:text-sky-300',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-8',
+        default: 'h-9 px-5 py-2',
+        sm: 'h-8 px-4 text-xs',
+        lg: 'h-11 px-8 text-base',
         icon: 'h-9 w-9',
       },
     },
