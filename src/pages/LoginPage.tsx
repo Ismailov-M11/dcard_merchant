@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { startLoginTransition, endLoginTransition } from '@/lib/loginTransition'
 const LoginPage = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const { login } = useAuth();
@@ -89,13 +90,27 @@ const LoginPage = () => {
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/75 text-sm">Пароль</Label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading || leaving}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading || leaving}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(v => !v)}
+                disabled={loading || leaving}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground/70 transition-colors disabled:pointer-events-none"
+              >
+                {showPassword
+                  ? <EyeOff className="h-4 w-4" />
+                  : <Eye    className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <Button type="submit" className="w-full mt-2 h-11" disabled={loading || leaving}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

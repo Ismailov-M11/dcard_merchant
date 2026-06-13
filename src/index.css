@@ -186,21 +186,21 @@ body {
   box-shadow: 0 0 0 3px rgba(78, 164, 204, 0.18);
 }
 
-/* Glass input — DARK mode */
+/* Glass input — DARK mode (stable, solid bg so text is always readable) */
 .dark .glass-input {
-  background: rgba(26, 63, 117, 0.18) !important;
-  border: 1px solid rgba(78, 164, 204, 0.22) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(14, 22, 36, 0.90) !important;
+  border: 1px solid rgba(95, 155, 210, 0.28) !important;
+  color: rgba(230, 242, 255, 0.95) !important;
 }
 
 .dark .glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
+  color: rgba(180, 210, 240, 0.35);
 }
 
 .dark .glass-input:focus {
-  background: rgba(26, 63, 117, 0.28) !important;
-  border-color: rgba(78, 164, 204, 0.70) !important;
-  box-shadow: 0 0 0 3px rgba(78, 164, 204, 0.18);
+  background: rgba(14, 22, 36, 0.95) !important;
+  border-color: rgba(78, 164, 204, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(78, 164, 204, 0.15);
 }
 
 /* Sidebar glass — LIGHT */
