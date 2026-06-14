@@ -30,6 +30,7 @@ export function Sidebar() {
   // visualIdx drives the indicator — moves immediately on click, syncs on back/forward
   const [visualIdx, setVisualIdx] = useState(currentIdx);
   const prevVisual = useRef(currentIdx);
+  const [hoveredIdx, setHoveredIdx] = useState(-1);
 
   // Keep in sync with browser back/forward navigation
   useLayoutEffect(() => { setVisualIdx(currentIdx); }, [currentIdx]);
@@ -86,30 +87,51 @@ export function Sidebar() {
               top: pill.top,
               height: pill.height,
               opacity: pill.opacity,
-              background: 'linear-gradient(105deg, #1A3F75 20%, #1C4A88 50%, #B8820E 100%)',
-              transition: `top ${pill.dur}s ${pill.ease}, height ${pill.dur}s ${pill.ease}, opacity 0.12s linear`,
+              // 200%-wide gradient: left half = blue→gold, right half = gold→blue
+              // background-position slides the visible window left/right
+              background: 'linear-gradient(to right, #1A3F75 0%, #1C4A88 22%, #B8820E 50%, #1C4A88 78%, #1A3F75 100%)',
+              backgroundSize: '200% 100%',
+              backgroundPosition: hoveredIdx === visualIdx ? '100% center' : '0% center',
+              transition: [
+                `top ${pill.dur}s ${pill.ease}`,
+                `height ${pill.dur}s ${pill.ease}`,
+                'opacity 0.12s linear',
+                'background-position 0.50s cubic-bezier(0.4, 0, 0.2, 1)',
+              ].join(', '),
               '--pill-dur': `${pill.dur}s`,
             } as CSSProperties}
           />
 
-          {NAV_ITEMS.map((item, i) => (
-            <a
-              key={item.path}
-              ref={(el) => { itemRefs.current[i] = el; }}
-              href={item.path}
-              onClick={handleClick(item.path, i)}
-              aria-current={visualIdx === i ? 'page' : undefined}
-              className={cn(
-                'relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium z-10 transition-colors duration-150',
-                visualIdx === i
-                  ? 'text-white'
-                  : 'text-foreground/60 hover:text-foreground',
-              )}
-            >
-              <item.icon className={cn('h-4 w-4 shrink-0 transition-colors duration-150', visualIdx === i ? 'text-amber-300' : '')} />
-              {item.label}
-            </a>
-          ))}
+          {NAV_ITEMS.map((item, i) => {
+            const isActive  = visualIdx === i;
+            const isHovered = hoveredIdx === i;
+            return (
+              <a
+                key={item.path}
+                ref={(el) => { itemRefs.current[i] = el; }}
+                href={item.path}
+                onClick={handleClick(item.path, i)}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(-1)}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium z-10 transition-colors duration-200',
+                  isActive ? 'text-white' : 'text-foreground/60 hover:text-foreground',
+                )}
+              >
+                <item.icon
+                  className={cn(
+                    'h-4 w-4 shrink-0',
+                    'transition-colors duration-500',
+                    isActive
+                      ? (isHovered ? 'text-[#4EA4CC]' : 'text-amber-300')
+                      : '',
+                  )}
+                />
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
       </ScrollArea>
 

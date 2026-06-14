@@ -16,7 +16,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 >(({ className, inset, children, ...props }, ref) => (
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
-    className={cn('flex cursor-default gap-2 select-none items-center rounded-xl px-2 py-1.5 text-sm outline-none focus:bg-[#1A3F75]/12 data-[state=open]:bg-[#1A3F75]/12 text-foreground/85', inset && 'pl-8', className)}
+    className={cn('flex cursor-pointer gap-2 select-none items-center rounded-xl px-3 py-2 text-sm outline-none transition-all duration-150 data-[highlighted]:bg-[#1A3F75]/14 data-[highlighted]:translate-x-0.5 data-[state=open]:bg-[#1A3F75]/12 text-foreground/85', inset && 'pl-8', className)}
     {...props}
   >
     {children}
@@ -63,7 +63,14 @@ const DropdownMenuItem = React.forwardRef<
 >(({ className, inset, ...props }, ref) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
-    className={cn('relative flex cursor-default select-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-none transition-colors focus:bg-[#1A3F75]/12 focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50', inset && 'pl-8', className)}
+    className={cn(
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none',
+      'transition-all duration-150',
+      'data-[highlighted]:bg-[#1A3F75]/14 data-[highlighted]:text-foreground data-[highlighted]:translate-x-0.5',
+      'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      inset && 'pl-8',
+      className,
+    )}
     {...props}
   />
 ));
