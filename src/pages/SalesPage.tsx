@@ -114,9 +114,9 @@ export default function SalesPage() {
 
   const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
     {
-      accessorKey: 'image', header: '',
-      cell: ({ getValue }) => {
-        const src = mediaUrl(getValue() as string | null);
+      id: 'image', header: '',
+      cell: ({ row }) => {
+        const src = mediaUrl(row.original.image ?? row.original.partner_detail?.logo);
         return src ? <img src={src} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted" />;
       },
     },
