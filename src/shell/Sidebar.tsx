@@ -121,11 +121,11 @@ export function Sidebar() {
               >
                 <item.icon
                   className={cn(
-                    'h-4 w-4 shrink-0',
-                    'transition-colors duration-500',
+                    'shrink-0',
+                    'transition-all duration-400',
                     isActive
-                      ? (isHovered ? 'text-[#4EA4CC]' : 'text-amber-300')
-                      : '',
+                      ? (isHovered ? 'h-[18px] w-[18px] text-white' : 'h-4 w-4 text-amber-300')
+                      : 'h-4 w-4',
                   )}
                 />
                 {item.label}
