@@ -15,11 +15,11 @@ const LABELS: Record<string, string> = {
   cancelled: 'Отменён',
 };
 
-const VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning'> = {
+const VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'brand'> = {
   pending: 'warning',
   active: 'success',
   approved: 'success',
-  new: 'default',
+  new: 'brand',
   confirmed: 'secondary',
   completed: 'success',
   paused: 'secondary',

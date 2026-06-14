@@ -10,7 +10,7 @@ export function Header() {
       <div className="flex-1" />
       <ThemeSwitch />
       <NotificationsPopover />
-      <div className="w-px h-5 bg-[#4EA4CC]/15 mx-1" />
+      <div className="w-px h-5 bg-[rgba(210,158,24,0.35)] mx-1" />
       <ProfileMenu />
     </header>
   );

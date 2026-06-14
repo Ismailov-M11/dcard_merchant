@@ -83,11 +83,12 @@ export function Sidebar() {
         <nav className="relative px-3 space-y-0.5">
           {/* Liquid sliding indicator */}
           <div
-            className={cn('absolute left-1 right-1 rounded-2xl bg-[#1A3F75] shadow-md shadow-[#1A3F75]/20', travelCls)}
+            className={cn('absolute left-1 right-1 rounded-2xl shadow-md shadow-[#1A3F75]/20', travelCls)}
             style={{
               top: pill.top,
               height: pill.height,
               opacity: pill.opacity,
+              background: 'linear-gradient(110deg, #1A3F75 0%, #1B4A85 62%, rgba(210, 158, 24, 0.55) 100%)',
               transition: `top ${pill.dur}s ${pill.ease}, height ${pill.dur}s ${pill.ease}, opacity 0.12s linear`,
               '--pill-dur': `${pill.dur}s`,
             } as CSSProperties}
@@ -107,14 +108,14 @@ export function Sidebar() {
                   : 'text-foreground/60 hover:text-foreground',
               )}
             >
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon className={cn('h-4 w-4 shrink-0 transition-colors duration-150', visualIdx === i ? 'text-amber-300' : '')} />
               {item.label}
             </a>
           ))}
         </nav>
       </ScrollArea>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#1A3F75]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[rgba(210,158,24,0.32)] to-transparent" />
     </aside>
   );
 }

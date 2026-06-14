@@ -60,7 +60,7 @@ const LoginPage = () => {
         />
         <div
           className="absolute rounded-full orb-drift-4 w-[360px] h-[360px] bottom-10 -right-20"
-          style={{ background: 'rgba(78,164,204,0.44)', filter: 'blur(36px)', opacity: 0.82, animationDelay: '-4s' }}
+          style={{ background: 'rgba(230, 168, 30, 0.46)', filter: 'blur(40px)', opacity: 0.72, animationDelay: '-4s' }}
         />
         <div
           className="absolute rounded-full orb-drift-1 w-[240px] h-[240px] top-1/2 left-1/2"
