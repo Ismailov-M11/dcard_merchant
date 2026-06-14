@@ -460,9 +460,6 @@ body {
 /* Tabular numbers */
 .tnum { font-variant-numeric: tabular-nums; }
 
-/* ─── Switch spring animations ──────────────────────────────────────── */
-.switch-root  { transition: background-color 0.28s ease, box-shadow 0.28s ease; }
-.switch-thumb { transition: transform 0.32s cubic-bezier(0.34, 1.45, 0.64, 1); }
 
 /* ─── Tab content enter animation ───────────────────────────────────── */
 @keyframes tab-enter {
