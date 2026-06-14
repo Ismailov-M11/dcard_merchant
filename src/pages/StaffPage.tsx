@@ -96,7 +96,7 @@ export default function StaffPage() {
       ),
     },
     {
-      id: 'actions', header: '',
+      id: 'actions', header: 'Действия',
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" onClick={() => { setEditStaff(row.original); editForm.reset({ phone: row.original.phone, full_name: row.original.full_name, outlet_id: String(row.original.outlet_id), staff_roles: row.original.staff_roles[0] ?? '' }); }}>
