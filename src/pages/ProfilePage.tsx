@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, ImageUp } from 'lucide-react';
 import { fetchPartnerProfile, updatePartnerProfile } from '@/api/partnerProfile';
 import type { Partner } from '@/types';
 import { PageHeader } from '@/components/PageHeader';
@@ -158,15 +158,31 @@ export default function ProfilePage() {
                 <TabsContent value="logo">
                   <Card><CardHeader><CardTitle>Логотип</CardTitle></CardHeader>
                     <CardContent>
-                      {profile.logo && (
-                        <img src={mediaUrl(profile.logo)} alt="Логотип" className="h-24 w-24 object-contain rounded mb-4 border" />
-                      )}
-                      <Input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)} />
+                      <div className="flex items-center gap-5">
+                        {profile.logo && (
+                          <img src={mediaUrl(profile.logo)} alt="Логотип" className="h-20 w-20 object-contain rounded-xl border shrink-0" />
+                        )}
+                        <div className="flex flex-col gap-2">
+                          <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors shadow-sm select-none">
+                            <ImageUp className="h-4 w-4" />
+                            Выбрать файл
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                            />
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            {logoFile ? logoFile.name : 'PNG, JPG, SVG до 5 МБ'}
+                          </p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>
-              <div className="mt-4">
+              <div className="mt-4 flex justify-end">
                 <Button type="submit" disabled={mutation.isPending}>
                   {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Сохранить изменения
