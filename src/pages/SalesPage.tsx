@@ -57,32 +57,30 @@ const STATUS_OPTS: { value: DealStatus | 'all'; label: string }[] = [
   { value: 'rejected', label: 'Отклонённые' },
 ];
 
-function StatusSwitch({
-  deal,
-  onMutate,
-}: {
-  deal: MerchantDeal;
-  onMutate: (id: number, status: DealStatus) => Promise<unknown>;
-}) {
+function StatusSwitch({ deal }: { deal: MerchantDeal }) {
+  const qc = useQueryClient();
   const [checked, setChecked] = useState(deal.status === 'active');
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setChecked(deal.status === 'active');
   }, [deal.status]);
 
-  const handleClick = async () => {
-    if (busy || deal.status === 'rejected') return;
+  const mutation = useMutation({
+    mutationFn: (status: DealStatus) => updateDealStatus(deal.id, status),
+    onSuccess: () => {
+      toast.success('Статус изменён');
+      qc.invalidateQueries({ queryKey: ['deals'] });
+    },
+    onError: () => toast.error('Ошибка изменения статуса'),
+  });
+
+  const handleClick = () => {
+    if (mutation.isPending || deal.status === 'rejected') return;
     const next = !checked;
     setChecked(next);
-    setBusy(true);
-    try {
-      await onMutate(deal.id, next ? 'active' : 'paused');
-    } catch {
-      setChecked(!next);
-    } finally {
-      setBusy(false);
-    }
+    mutation.mutate(next ? 'active' : 'paused', {
+      onError: () => setChecked(!next),
+    });
   };
 
   return (
@@ -91,7 +89,7 @@ function StatusSwitch({
       role="switch"
       aria-checked={checked}
       onClick={handleClick}
-      disabled={busy || deal.status === 'rejected'}
+      disabled={mutation.isPending || deal.status === 'rejected'}
       className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
       style={{
         backgroundColor: checked ? '#1A3F75' : 'hsl(var(--input))',
@@ -157,12 +155,6 @@ export default function SalesPage() {
     onError: () => toast.error('Ошибка обновления'),
   });
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: DealStatus }) => updateDealStatus(id, status),
-    onSuccess: () => { toast.success('Статус изменён'); qc.invalidateQueries({ queryKey: ['deals'] }); },
-    onError: () => toast.error('Ошибка изменения статуса'),
-  });
-
   const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
     {
       id: 'image', header: '',
@@ -200,15 +192,12 @@ export default function SalesPage() {
             }}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <StatusSwitch
-              deal={d}
-              onMutate={(id, status) => statusMutation.mutateAsync({ id, status })}
-            />
+            <StatusSwitch deal={d} />
           </div>
         );
       },
     },
-  ], [form, statusMutation]);
+  ], [form]);
 
   if (isError) return <ErrorState onRetry={refetch} />;
 
