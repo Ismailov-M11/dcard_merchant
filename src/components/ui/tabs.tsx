@@ -7,17 +7,75 @@ const Tabs = TabsPrimitive.Root;
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      'inline-flex h-10 items-center justify-center rounded-2xl p-1 text-foreground/60',
-      'bg-[#1A3F75]/10 border border-[#1A3F75]/15 dark:bg-[#1A3F75]/20 dark:border-[#4EA4CC]/15',
-      className,
-    )}
-    {...props}
-  />
-));
+>(({ className, children, ...props }, ref) => {
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const indicatorRef = React.useRef<HTMLDivElement>(null);
+
+  const updateIndicator = React.useCallback((animate = true) => {
+    const list = listRef.current;
+    const indicator = indicatorRef.current;
+    if (!list || !indicator) return;
+    const active = list.querySelector<HTMLElement>('[data-state=active]');
+    if (!active) return;
+    if (!animate) indicator.style.transition = 'none';
+    indicator.style.left   = `${active.offsetLeft}px`;
+    indicator.style.top    = `${active.offsetTop}px`;
+    indicator.style.width  = `${active.offsetWidth}px`;
+    indicator.style.height = `${active.offsetHeight}px`;
+    if (!animate) {
+      // force reflow then re-enable transitions
+      void indicator.offsetWidth;
+      indicator.style.transition = '';
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // set initial position without animation
+    updateIndicator(false);
+
+    const observer = new MutationObserver(() => updateIndicator(true));
+    if (listRef.current) {
+      observer.observe(listRef.current, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['data-state'],
+      });
+    }
+    return () => observer.disconnect();
+  }, [updateIndicator]);
+
+  return (
+    <TabsPrimitive.List
+      ref={(node) => {
+        (listRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }}
+      className={cn(
+        'relative inline-flex h-10 items-center justify-center rounded-2xl p-1 text-foreground/60',
+        'bg-[#1A3F75]/10 border border-[#1A3F75]/15 dark:bg-[#1A3F75]/20 dark:border-[#4EA4CC]/15',
+        className,
+      )}
+      {...props}
+    >
+      {/* Sliding pill indicator */}
+      <div
+        ref={indicatorRef}
+        aria-hidden
+        className="absolute rounded-xl bg-[#1A3F75] shadow-sm pointer-events-none"
+        style={{
+          transition: [
+            'left   0.30s cubic-bezier(0.34, 1.35, 0.64, 1)',
+            'width  0.30s cubic-bezier(0.34, 1.35, 0.64, 1)',
+            'top    0.30s cubic-bezier(0.34, 1.35, 0.64, 1)',
+            'height 0.30s cubic-bezier(0.34, 1.35, 0.64, 1)',
+          ].join(', '),
+        }}
+      />
+      {children}
+    </TabsPrimitive.List>
+  );
+});
 TabsList.displayName = TabsPrimitive.List.displayName;
 
 const TabsTrigger = React.forwardRef<
@@ -27,11 +85,11 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-xl px-4 py-1.5 text-sm font-medium',
-      'transition-all duration-200 cursor-pointer',
+      'relative z-10 inline-flex items-center justify-center whitespace-nowrap rounded-xl px-4 py-1.5 text-sm font-medium',
+      'transition-colors duration-200 cursor-pointer',
       'focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-      'data-[state=active]:bg-[#1A3F75] data-[state=active]:text-white data-[state=active]:shadow-sm',
-      'data-[state=inactive]:hover:bg-[#1A3F75]/12 data-[state=inactive]:hover:text-foreground',
+      'data-[state=active]:text-white',
+      'data-[state=inactive]:hover:text-foreground/90',
       className,
     )}
     {...props}
