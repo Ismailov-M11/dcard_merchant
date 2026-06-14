@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -25,7 +25,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
 import { fmtDate } from '@/lib/dates';
 import { mediaUrl } from '@/lib/assets';
 
@@ -58,14 +57,65 @@ const STATUS_OPTS: { value: DealStatus | 'all'; label: string }[] = [
   { value: 'rejected', label: 'Отклонённые' },
 ];
 
+function StatusSwitch({
+  deal,
+  onMutate,
+}: {
+  deal: MerchantDeal;
+  onMutate: (id: number, status: DealStatus) => Promise<unknown>;
+}) {
+  const [checked, setChecked] = useState(deal.status === 'active');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setChecked(deal.status === 'active');
+  }, [deal.status]);
+
+  const handleClick = async () => {
+    if (busy || deal.status === 'rejected') return;
+    const next = !checked;
+    setChecked(next);
+    setBusy(true);
+    try {
+      await onMutate(deal.id, next ? 'active' : 'paused');
+    } catch {
+      setChecked(!next);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={handleClick}
+      disabled={busy || deal.status === 'rejected'}
+      className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+      style={{
+        backgroundColor: checked ? '#1A3F75' : 'hsl(var(--input))',
+        boxShadow: checked ? '0 0 0 3px rgba(26,63,117,0.18)' : 'none',
+        transition: 'background-color 0.28s ease, box-shadow 0.28s ease',
+      }}
+    >
+      <span
+        className="pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg"
+        style={{
+          transform: checked ? 'translateX(1rem)' : 'translateX(0)',
+          transition: 'transform 0.35s cubic-bezier(0.34, 1.45, 0.64, 1)',
+        }}
+      />
+    </button>
+  );
+}
+
 export default function SalesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editDeal, setEditDeal] = useState<MerchantDeal | null>(null);
-  const [pendingStatusId, setPendingStatusId] = useState<number | null>(null);
-
   const { data: deals = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['deals', statusFilter, search],
     queryFn: () => fetchMerchantDeals({ status: statusFilter, search: search || undefined }),
@@ -109,21 +159,8 @@ export default function SalesPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: DealStatus }) => updateDealStatus(id, status),
-    onMutate: async ({ id, status }) => {
-      setPendingStatusId(id);
-      await qc.cancelQueries({ queryKey: ['deals'] });
-      const prev = qc.getQueryData<MerchantDeal[]>(['deals', statusFilter, search]);
-      qc.setQueryData<MerchantDeal[]>(['deals', statusFilter, search], old =>
-        old?.map(d => d.id === id ? { ...d, status } : d),
-      );
-      return { prev };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['deals', statusFilter, search], ctx.prev);
-      toast.error('Ошибка изменения статуса');
-    },
     onSuccess: () => { toast.success('Статус изменён'); qc.invalidateQueries({ queryKey: ['deals'] }); },
-    onSettled: () => setPendingStatusId(null),
+    onError: () => toast.error('Ошибка изменения статуса'),
   });
 
   const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
@@ -163,10 +200,9 @@ export default function SalesPage() {
             }}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Switch
-              checked={d.status === 'active'}
-              disabled={pendingStatusId === d.id || d.status === 'rejected'}
-              onCheckedChange={(checked) => statusMutation.mutate({ id: d.id, status: checked ? 'active' : 'paused' })}
+            <StatusSwitch
+              deal={d}
+              onMutate={(id, status) => statusMutation.mutateAsync({ id, status })}
             />
           </div>
         );
