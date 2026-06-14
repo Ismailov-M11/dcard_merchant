@@ -192,7 +192,7 @@ export default function SalesPage() {
     { accessorKey: 'start_at', header: 'С', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
     { accessorKey: 'end_at', header: 'До', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
     {
-      id: 'actions', header: '',
+      id: 'actions', header: 'Действия',
       cell: ({ row }) => {
         const d = row.original;
         return (
