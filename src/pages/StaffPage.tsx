@@ -121,6 +121,7 @@ export default function StaffPage() {
     <div>
       <PageHeader
         title="Сотрудники"
+        description="Управляйте доступом сотрудников к панели"
         actions={<Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Добавить</Button>}
       />
       <div className="flex gap-3 mb-4">

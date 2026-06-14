@@ -121,7 +121,7 @@ export default function BranchesPage() {
 
   return (
     <div>
-      <PageHeader title="Филиалы" actions={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Добавить</Button>} />
+      <PageHeader title="Филиалы" description="Управляйте вашими точками продаж" actions={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Добавить</Button>} />
       <div className="mb-4">
         <SearchInput value={search} onChange={setSearch} className="w-64" />
       </div>

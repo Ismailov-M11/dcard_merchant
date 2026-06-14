@@ -190,7 +190,7 @@ export default function SalesPage() {
 
   return (
     <div>
-      <PageHeader title="Акции" actions={<Button onClick={() => { setFormOpen(true); form.reset(); }}><Plus className="h-4 w-4 mr-1" />Создать акцию</Button>} />
+      <PageHeader title="Акции" description="Специальные предложения и скидки для клиентов" actions={<Button onClick={() => { setFormOpen(true); form.reset(); }}><Plus className="h-4 w-4 mr-1" />Создать акцию</Button>} />
       <Tabs defaultValue="deals">
         <TabsList className="mb-4">
           <TabsTrigger value="deals">Акции</TabsTrigger>
