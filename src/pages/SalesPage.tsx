@@ -67,11 +67,26 @@ function StatusSwitch({ deal }: { deal: MerchantDeal }) {
 
   const mutation = useMutation({
     mutationFn: (status: DealStatus) => updateDealStatus(deal.id, status),
+    onMutate: async (newStatus) => {
+      await qc.cancelQueries({ queryKey: ['deals'] });
+      const snapshot = qc.getQueriesData<MerchantDeal[]>({ queryKey: ['deals'] });
+      snapshot.forEach(([key, old]) => {
+        if (old) {
+          qc.setQueryData<MerchantDeal[]>(key, old.map(d =>
+            d.id === deal.id ? { ...d, status: newStatus } : d,
+          ));
+        }
+      });
+      return { snapshot };
+    },
+    onError: (_err, _vars, ctx) => {
+      ctx?.snapshot.forEach(([key, old]) => qc.setQueryData(key, old));
+      toast.error('Ошибка изменения статуса');
+    },
     onSuccess: () => {
       toast.success('Статус изменён');
       qc.invalidateQueries({ queryKey: ['deals'] });
     },
-    onError: () => toast.error('Ошибка изменения статуса'),
   });
 
   const handleClick = () => {
@@ -167,7 +182,13 @@ export default function SalesPage() {
     { accessorKey: 'offer_type', header: 'Тип', cell: ({ getValue }) => <SaleTypeBadge type={getValue() as 'discount' | 'one_plus_one' | 'exclusive'} /> },
     { accessorKey: 'price', header: 'Цена', cell: ({ getValue }) => getValue() ? <MoneyText amount={getValue() as string} /> : '—' },
     { accessorKey: 'discount_percent', header: 'Скидка %', cell: ({ getValue }) => getValue() ? `${getValue()}%` : '—' },
-    { accessorKey: 'status', header: 'Статус', cell: ({ getValue }) => <StatusBadge status={getValue() as DealStatus} /> },
+    {
+      accessorKey: 'status', header: 'Статус',
+      cell: ({ getValue }) => {
+        const s = getValue() as DealStatus;
+        return <span key={s} className="badge-pop"><StatusBadge status={s} /></span>;
+      },
+    },
     { accessorKey: 'start_at', header: 'С', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
     { accessorKey: 'end_at', header: 'До', cell: ({ getValue }) => fmtDate(getValue() as string | null) },
     {
