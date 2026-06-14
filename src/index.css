@@ -320,6 +320,20 @@ body {
   pointer-events: none;
 }
 
+/* ─── Curtain drop (logout → login) — falls from top, bounces ─────── */
+@keyframes curtain-down {
+  0%   { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.42, 0, 0.88, 0.46); }
+  78%  { transform: translateY(0px);    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  88%  { transform: translateY(-18px);  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  95%  { transform: translateY(5px);    animation-timing-function: ease-out; }
+  100% { transform: translateY(0);      }
+}
+
+.animate-curtain-down {
+  animation: curtain-down 0.75s linear forwards;
+  will-change: transform;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

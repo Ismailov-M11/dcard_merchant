@@ -1,5 +1,6 @@
 import { LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { startLogoutTransition } from '@/lib/loginTransition';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ export function ProfileMenu() {
   const initials = user?.first_name ? user.first_name[0].toUpperCase() : user?.phone.slice(-2) ?? '??';
 
   function handleLogout() {
+    startLogoutTransition(); // set flag BEFORE logout clears user
     logout();
     navigate('/login');
   }

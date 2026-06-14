@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/AuthContext';
-import { startLoginTransition, endLoginTransition } from '@/lib/loginTransition';
+import { startLoginTransition, endLoginTransition, isLogoutTransition, endLogoutTransition } from '@/lib/loginTransition';
 
 const LoginPage = () => {
   const [phone, setPhone] = useState('');
@@ -13,6 +13,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [entering, setEntering] = useState(() => isLogoutTransition());
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -35,14 +36,19 @@ const LoginPage = () => {
   };
 
   const handleAnimationEnd = () => {
-    endLoginTransition();
-    navigate('/', { replace: true });
+    if (leaving) {
+      endLoginTransition();
+      navigate('/', { replace: true });
+    } else if (entering) {
+      endLogoutTransition();
+      setEntering(false);
+    }
   };
 
   return (
     <div
-      className={`fixed inset-0 flex items-center justify-center px-4 overflow-hidden bg-background${leaving ? ' animate-curtain-up' : ''}`}
-      onAnimationEnd={leaving ? handleAnimationEnd : undefined}
+      className={`fixed inset-0 flex items-center justify-center px-4 overflow-hidden bg-background${leaving ? ' animate-curtain-up' : entering ? ' animate-curtain-down' : ''}`}
+      onAnimationEnd={(leaving || entering) ? handleAnimationEnd : undefined}
     >
       {/* ── Animated background orbs ── */}
       <div className="absolute inset-0 pointer-events-none">
