@@ -1,8 +1,7 @@
 import httpClient from './httpClient';
 import type { AuthTokens, CurrentUser, Envelope } from '../types';
 
-// TODO(backend): remove mock when CORS is resolved on api.dcard.uz
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 
 interface LoginPayload {
   phone: string;
