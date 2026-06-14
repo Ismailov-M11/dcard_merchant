@@ -16,7 +16,7 @@ export function MobileSidebar() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="p-0 bg-sidebar w-60">
           <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
-            <span className="text-sidebar-foreground font-bold text-lg">DCard Merchant</span>
+            <span className="text-sidebar-foreground font-bold text-lg">Dcard Merchant</span>
           </div>
           <nav className="px-2 py-2 space-y-0.5">
             {NAV_ITEMS.map((item) => (

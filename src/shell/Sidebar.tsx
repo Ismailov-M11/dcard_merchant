@@ -72,11 +72,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="h-14 flex items-center px-5 border-b border-[#1A3F75]/10">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-2xl flex items-center justify-center shadow-lg shadow-[#1A3F75]/30"
-            style={{ background: 'linear-gradient(135deg, #1A3F75 30%, #C4920A 100%)' }}>
-            <span className="text-white text-xs font-bold tracking-wider">D</span>
-          </div>
-          <span className="text-foreground font-semibold text-sm tracking-wide">DCard Merchant</span>
+          <img src="/logo.png" alt="Dcard" className="h-8 w-8 rounded-2xl object-cover shadow-lg shadow-[#1A3F75]/20" />
+          <span className="text-foreground font-semibold text-sm tracking-wide">Dcard Merchant</span>
         </div>
       </div>
 

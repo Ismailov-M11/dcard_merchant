@@ -71,10 +71,8 @@ const LoginPage = () => {
       {/* ── Login card ── */}
       <div className="glass-strong w-full max-w-sm rounded-3xl p-8 relative z-10">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-14 w-14 rounded-2xl bg-[#1A3F75] flex items-center justify-center shadow-xl shadow-[#1A3F75]/25 mb-4">
-            <span className="text-white text-2xl font-bold">D</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">DCard Merchant</h1>
+          <img src="/logo.png" alt="Dcard" className="h-16 w-16 rounded-2xl object-cover shadow-xl shadow-[#1A3F75]/25 mb-0" />
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Dcard Merchant</h1>
           <p className="text-muted-foreground text-sm mt-1">Войдите в партнёрскую панель</p>
         </div>
 
