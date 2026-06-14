@@ -460,6 +460,25 @@ body {
 /* Tabular numbers */
 .tnum { font-variant-numeric: tabular-nums; }
 
+/* ─── Switch — plain CSS data-state selectors (no Tailwind CSS vars) ── */
+.switch-bg {
+  transition: background-color 0.28s ease, box-shadow 0.28s ease;
+}
+.switch-bg[data-state="checked"] {
+  background-color: #1A3F75;
+  box-shadow: 0 0 0 3px rgba(26, 63, 117, 0.18);
+}
+.switch-bg[data-state="unchecked"] {
+  background-color: hsl(var(--input));
+  box-shadow: none;
+}
+
+.switch-thumb {
+  transition: transform 0.35s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+.switch-thumb[data-state="checked"]   { transform: translateX(1rem); }
+.switch-thumb[data-state="unchecked"] { transform: translateX(0);    }
+
 
 /* ─── Tab content enter animation ───────────────────────────────────── */
 @keyframes tab-enter {
