@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Loader2, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, MapPin, ImageUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { createOutlet, deleteOutlet, fetchOutletTypes, fetchOutlets, fetchPartners, updateOutlet, type OutletPayload } from '@/api/outlets';
 import type { Outlet, OutletType, Partner, OutletLocation } from '@/types';
@@ -107,7 +107,7 @@ export default function BranchesPage() {
       cell: ({ getValue }) => getValue() ? <MapPin className="h-4 w-4 text-primary" /> : null,
     },
     {
-      id: 'actions', header: '',
+      id: 'actions', header: 'Действия',
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" onClick={() => openEdit(row.original)}><Pencil className="h-4 w-4" /></Button>
@@ -169,7 +169,11 @@ export default function BranchesPage() {
               )} />
               <div>
                 <p className="text-sm font-medium mb-2">Фото</p>
-                <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors shadow-sm select-none">
+                  <ImageUp className="h-4 w-4" />
+                  {imageFile ? imageFile.name : 'Выбрать файл'}
+                  <input type="file" accept="image/*" className="sr-only" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+                </label>
               </div>
               <div>
                 <p className="text-sm font-medium mb-2">Местоположение</p>
