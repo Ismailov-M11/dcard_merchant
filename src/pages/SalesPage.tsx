@@ -64,6 +64,7 @@ export default function SalesPage() {
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editDeal, setEditDeal] = useState<MerchantDeal | null>(null);
+  const [pendingStatusId, setPendingStatusId] = useState<number | null>(null);
 
   const { data: deals = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['deals', statusFilter, search],
@@ -109,6 +110,7 @@ export default function SalesPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: DealStatus }) => updateDealStatus(id, status),
     onMutate: async ({ id, status }) => {
+      setPendingStatusId(id);
       await qc.cancelQueries({ queryKey: ['deals'] });
       const prev = qc.getQueryData<MerchantDeal[]>(['deals', statusFilter, search]);
       qc.setQueryData<MerchantDeal[]>(['deals', statusFilter, search], old =>
@@ -121,6 +123,7 @@ export default function SalesPage() {
       toast.error('Ошибка изменения статуса');
     },
     onSuccess: () => { toast.success('Статус изменён'); qc.invalidateQueries({ queryKey: ['deals'] }); },
+    onSettled: () => setPendingStatusId(null),
   });
 
   const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
@@ -162,7 +165,7 @@ export default function SalesPage() {
             </Button>
             <Switch
               checked={d.status === 'active'}
-              disabled={statusMutation.isPending || d.status === 'rejected'}
+              disabled={pendingStatusId === d.id || d.status === 'rejected'}
               onCheckedChange={(checked) => statusMutation.mutate({ id: d.id, status: checked ? 'active' : 'paused' })}
             />
           </div>
