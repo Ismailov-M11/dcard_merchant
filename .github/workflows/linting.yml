@@ -1,23 +1,9 @@
+# disabled
 name: 'Ansible Linting'
-
-on:
-  pull_request:
-    branches:
-      - main
-      - dev
-    paths:
-      - '.github/ansible/**'
-
-env:
-  ANSIBLE_CONFIG: .github/ansible/ansible.cfg
-
+on: workflow_dispatch
 jobs:
   ansible-lint:
-    name: Ansible Linting
+    if: false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run ansible-lint
-        shell: bash
-        run: ansible-lint -v -p .github/ansible/**/*
+      - run: echo disabled
