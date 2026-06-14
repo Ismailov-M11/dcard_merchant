@@ -322,15 +322,15 @@ body {
 
 /* ─── Curtain drop (logout → login) — falls from top, bounces ─────── */
 @keyframes curtain-down {
-  0%   { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.42, 0, 0.88, 0.46); }
-  78%  { transform: translateY(0px);    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  88%  { transform: translateY(-18px);  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  95%  { transform: translateY(5px);    animation-timing-function: ease-out; }
+  0%   { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.40, 0, 0.82, 0.38); }
+  72%  { transform: translateY(0px);    animation-timing-function: cubic-bezier(0.12, 0.8, 0.38, 1); }
+  85%  { transform: translateY(-65px);  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  94%  { transform: translateY(10px);   animation-timing-function: ease-out; }
   100% { transform: translateY(0);      }
 }
 
 .animate-curtain-down {
-  animation: curtain-down 0.75s linear forwards;
+  animation: curtain-down 1.05s linear forwards;
   will-change: transform;
 }
 
