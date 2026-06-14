@@ -108,8 +108,19 @@ export default function SalesPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: DealStatus }) => updateDealStatus(id, status),
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ['deals'] });
+      const prev = qc.getQueryData<MerchantDeal[]>(['deals', statusFilter, search]);
+      qc.setQueryData<MerchantDeal[]>(['deals', statusFilter, search], old =>
+        old?.map(d => d.id === id ? { ...d, status } : d),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['deals', statusFilter, search], ctx.prev);
+      toast.error('Ошибка изменения статуса');
+    },
     onSuccess: () => { toast.success('Статус изменён'); qc.invalidateQueries({ queryKey: ['deals'] }); },
-    onError: () => toast.error('Ошибка изменения статуса'),
   });
 
   const columns: ColumnDef<MerchantDeal>[] = useMemo(() => [
