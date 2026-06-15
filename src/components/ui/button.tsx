@@ -4,22 +4,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4EA4CC]/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007AFF]/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default:
-          'bg-[#1A3F75] text-white shadow-lg shadow-[#1A3F75]/30 hover:bg-[#1D4A90] border border-t-[rgba(210,165,25,0.55)] border-x-[rgba(210,165,25,0.25)] border-b-[rgba(26,63,117,0.40)] [box-shadow:0_1px_0_rgba(210,165,25,0.22)_inset,0_8px_20px_rgba(26,63,117,0.30)] hover:[box-shadow:0_1px_0_rgba(220,170,28,0.35)_inset,0_10px_28px_rgba(26,63,117,0.38),0_0_0_1.5px_rgba(210,165,25,0.45)] backdrop-blur-sm',
+          'bg-[#007AFF] text-white shadow-sm hover:opacity-90 active:scale-[0.98]',
         destructive:
-          'bg-red-600 text-white shadow-lg shadow-red-600/20 hover:bg-red-700 border border-red-500/30',
+          'bg-[#EE7070] text-white shadow-sm hover:opacity-90',
         outline:
-          'border border-[#1A3F75]/25 bg-[#1A3F75]/10 text-foreground shadow-sm hover:bg-[#1A3F75]/20 hover:text-foreground backdrop-blur-sm',
+          'border border-[var(--ios-border)] bg-transparent text-[var(--ios-text-primary)] shadow-sm hover:bg-[var(--ios-bg)]',
         secondary:
-          'bg-[#1A3F75]/12 text-foreground shadow-sm hover:bg-[#1A3F75]/20 border border-[#1A3F75]/15',
+          'bg-[var(--ios-bg)] text-[var(--ios-text-primary)] shadow-sm hover:bg-[#EBEBEB] dark:hover:bg-[#3A3A3C]',
         ghost:
-          'text-foreground/70 hover:bg-[#1A3F75]/15 hover:text-foreground',
+          'text-[var(--ios-text-tertiary)] hover:bg-[var(--ios-bg)] hover:text-[var(--ios-text-primary)]',
         link:
-          'text-[#1A3F75] underline-offset-4 hover:underline hover:text-[#2B5BA8] dark:text-[#4EA4CC] dark:hover:text-sky-300',
+          'text-[#007AFF] underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-9 px-5 py-2',

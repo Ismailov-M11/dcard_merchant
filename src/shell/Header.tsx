@@ -14,21 +14,20 @@ function usePageTitle() {
 export function Header() {
   const title = usePageTitle();
   return (
-    <header className="h-14 glass-header flex items-center px-4 gap-3 shrink-0">
+    <header className="h-14 ios-header flex items-center px-4 gap-3 shrink-0">
       <MobileSidebar />
+
       {title && (
-        <div className="flex items-center gap-2.5">
-          <span
-            className="inline-block w-0.5 h-5 rounded-full shrink-0"
-            style={{ background: 'linear-gradient(180deg, #D4A017 0%, rgba(180,130,10,0.45) 100%)' }}
-          />
-          <span className="font-semibold text-base text-foreground tracking-tight">{title}</span>
-        </div>
+        <span className="font-bold text-base text-[var(--ios-text-primary)] tracking-tight">
+          {title}
+        </span>
       )}
+
       <div className="flex-1" />
+
       <ThemeSwitch />
       <NotificationsPopover />
-      <div className="w-px h-5 bg-[rgba(210,158,24,0.35)] mx-1" />
+      <div className="w-px h-5 bg-[var(--ios-border)] mx-1" />
       <ProfileMenu />
     </header>
   );

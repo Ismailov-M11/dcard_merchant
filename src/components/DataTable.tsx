@@ -25,13 +25,20 @@ export function DataTable<TData>({ columns, data, isLoading, options }: DataTabl
   });
 
   return (
-    <div className="glass-table glow-surface rounded-3xl overflow-hidden">
+    <div className="ios-table overflow-hidden">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
+            <TableRow
+              key={hg.id}
+              className="ios-table-head border-0 hover:bg-transparent"
+            >
               {hg.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  className="text-xs font-semibold py-3 border-0"
+                  style={{ color: 'var(--ios-text-secondary)' }}
+                >
                   {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
@@ -41,24 +48,38 @@ export function DataTable<TData>({ columns, data, isLoading, options }: DataTabl
         <TableBody>
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
+              <TableRow
+                key={i}
+                className="border-0 border-b"
+                style={{ borderColor: 'var(--ios-divider)' }}
+              >
                 {columns.map((_, j) => (
-                  <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                  <TableCell key={j} className="py-3">
+                    <Skeleton className="h-4 w-full rounded-full" />
+                  </TableCell>
                 ))}
               </TableRow>
             ))
           ) : table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className="ios-table-row border-0 border-b last:border-0"
+                style={{ borderColor: 'var(--ios-divider)' }}
+              >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className="py-3"
+                    style={{ color: 'var(--ios-text-primary)' }}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : (
-            <TableRow>
+            <TableRow className="border-0 hover:bg-transparent">
               <TableCell colSpan={columns.length}>
                 <EmptyState title="Нет данных" />
               </TableCell>

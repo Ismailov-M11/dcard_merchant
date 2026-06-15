@@ -6,7 +6,7 @@ import { PageTransition } from '@/components/PageTransition';
 
 export function AppShell() {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--ios-bg)' }}>
       <div className="hidden md:flex">
         <Sidebar />
       </div>
@@ -25,10 +25,11 @@ export function AppShell() {
         position="top-right"
         toastOptions={{
           style: {
-            borderRadius: '1rem',
-          },
-          classNames: {
-            toast: 'glass-strong',
+            borderRadius: '14px',
+            background: 'var(--ios-card)',
+            border: '1px solid var(--ios-border)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+            color: 'var(--ios-text-primary)',
           },
         }}
       />

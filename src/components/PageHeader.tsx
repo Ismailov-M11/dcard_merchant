@@ -14,9 +14,20 @@ export function PageHeader({
 }) {
   if (!description && !actions) return null;
   return (
-    <div className={cn('flex items-center justify-between gap-4 mb-4', className)}>
-      {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      {actions && <div className="flex items-center gap-2 shrink-0 ml-auto">{actions}</div>}
+    <div className={cn('flex items-center justify-between gap-4 mb-5', className)}>
+      {description && (
+        <p
+          className="text-sm"
+          style={{ color: 'var(--ios-text-secondary)' }}
+        >
+          {description}
+        </p>
+      )}
+      {actions && (
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

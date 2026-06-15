@@ -16,7 +16,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 >(({ className, inset, children, ...props }, ref) => (
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
-    className={cn('flex cursor-pointer gap-2 select-none items-center rounded-xl px-3 py-2 text-sm outline-none transition-all duration-150 data-[highlighted]:bg-[#1A3F75]/14 data-[highlighted]:translate-x-0.5 data-[state=open]:bg-[#1A3F75]/12 text-foreground/85', inset && 'pl-8', className)}
+    className={cn('flex cursor-pointer gap-2 select-none items-center rounded-xl px-3 py-2 text-sm outline-none transition-all duration-150 data-[highlighted]:bg-[#007AFF]/14 data-[highlighted]:translate-x-0.5 data-[state=open]:bg-[#007AFF]/12 text-foreground/85', inset && 'pl-8', className)}
     {...props}
   >
     {children}
@@ -31,7 +31,7 @@ const DropdownMenuSubContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.SubContent
     ref={ref}
-    className={cn('glass-dark z-50 min-w-[8rem] overflow-hidden rounded-2xl p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95', className)}
+    className={cn('bg-[var(--ios-card)] border border-[var(--ios-border)] z-50 min-w-[8rem] overflow-hidden rounded-2xl p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95', className)}
     {...props}
   />
 ));
@@ -46,7 +46,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'glass-dark z-50 min-w-[8rem] overflow-hidden rounded-2xl p-1',
+        'bg-[var(--ios-card)] border border-[var(--ios-border)] z-50 min-w-[8rem] overflow-hidden rounded-2xl p-1',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',
         className,
@@ -66,7 +66,7 @@ const DropdownMenuItem = React.forwardRef<
     className={cn(
       'relative flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none',
       'transition-all duration-150',
-      'data-[highlighted]:bg-[#1A3F75]/14 data-[highlighted]:text-foreground data-[highlighted]:translate-x-0.5',
+      'data-[highlighted]:bg-[#007AFF]/14 data-[highlighted]:text-foreground data-[highlighted]:translate-x-0.5',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
       className,
@@ -82,7 +82,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 >(({ className, children, checked, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
-    className={cn('relative flex cursor-default select-none items-center rounded-xl py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[#1A3F75]/12 focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50', className)}
+    className={cn('relative flex cursor-default select-none items-center rounded-xl py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[#007AFF]/12 focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50', className)}
     checked={checked}
     {...props}
   >
@@ -102,7 +102,7 @@ const DropdownMenuRadioItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
-    className={cn('relative flex cursor-default select-none items-center rounded-xl py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[#1A3F75]/12 focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50', className)}
+    className={cn('relative flex cursor-default select-none items-center rounded-xl py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-[#007AFF]/12 focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50', className)}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

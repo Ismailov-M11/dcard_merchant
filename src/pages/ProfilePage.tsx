@@ -163,7 +163,7 @@ export default function ProfilePage() {
                           <img src={mediaUrl(profile.logo)} alt="Логотип" className="h-20 w-20 object-contain rounded-xl border shrink-0" />
                         )}
                         <div className="flex flex-col gap-2">
-                          <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors shadow-sm select-none">
+                          <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#007AFF] hover:opacity-90 transition-opacity shadow-sm select-none">
                             <ImageUp className="h-4 w-4" />
                             Выбрать файл
                             <input

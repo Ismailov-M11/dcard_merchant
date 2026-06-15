@@ -107,8 +107,8 @@ function StatusSwitch({ deal }: { deal: MerchantDeal }) {
       disabled={mutation.isPending || deal.status === 'rejected'}
       className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
       style={{
-        backgroundColor: checked ? '#1A3F75' : 'hsl(var(--input))',
-        boxShadow: checked ? '0 0 0 3px rgba(26,63,117,0.18)' : 'none',
+        backgroundColor: checked ? '#007AFF' : 'hsl(var(--input))',
+        boxShadow: checked ? '0 0 0 3px rgba(0,122,255,0.18)' : 'none',
         transition: 'background-color 0.28s ease, box-shadow 0.28s ease',
       }}
     >

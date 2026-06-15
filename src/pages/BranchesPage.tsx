@@ -169,7 +169,7 @@ export default function BranchesPage() {
               )} />
               <div>
                 <p className="text-sm font-medium mb-2">Фото</p>
-                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors shadow-sm select-none">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#007AFF] hover:opacity-90 transition-opacity shadow-sm select-none">
                   <ImageUp className="h-4 w-4" />
                   {imageFile ? imageFile.name : 'Выбрать файл'}
                   <input type="file" accept="image/*" className="sr-only" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
