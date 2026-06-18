@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState, useTransition, type CSSProperties } 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { NAV_ITEMS } from './nav';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 function getNavIndex(pathname: string) {
   if (pathname === '/') return 0;
@@ -61,7 +60,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 py-3">
+      <div className="flex-1 py-3 overflow-y-auto">
         <nav className="relative px-3">
           {/* Sliding active indicator */}
           <div
@@ -106,7 +105,7 @@ export function Sidebar() {
             })}
           </div>
         </nav>
-      </ScrollArea>
+      </div>
 
       <div className="h-px bg-[var(--ios-divider)]" />
 
