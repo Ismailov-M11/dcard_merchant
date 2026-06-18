@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Building2, ImageUp, FileText, ExternalLink, Trash2, Eye, X, Pencil } from 'lucide-react';
+import { Loader2, Building2, ImageUp, FileText, ExternalLink, Trash2, Eye, X, Pencil, Smartphone, ChevronLeft, Heart, MoreHorizontal, Star, Lock, Info, Store as StoreIcon, MessageCircle, Wifi } from 'lucide-react';
 import { fetchPartnerProfile, updatePartnerProfile } from '@/api/partnerProfile';
 import { fetchOutlets } from '@/api/outlets';
 import { fetchOutletBanners, createOutletBanner, updateOutletBanner, deleteOutletBanner } from '@/api/outletBanners';
@@ -21,7 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { mediaUrl } from '@/lib/assets';
 
 // ── color utilities ──────────────────────────────────────────────────────────
@@ -138,6 +137,7 @@ export default function ProfilePage() {
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [bannerColor, setBannerColor] = useState('#cccccc');
   const [bannerActive, setBannerActive] = useState(true);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
 
   // profile query
   const { data: profile, isLoading, isError, refetch } = useQuery<Partner>({
@@ -260,6 +260,16 @@ export default function ProfilePage() {
   const menuDisplayName = menuFile?.name ?? (profile?.menu && !deleteMenu ? profile.menu.split('/').pop() : null);
   const bannerBg = currentBanner?.background_color ?? '#e5e7eb';
   const previewTextColor = textOnBg(bannerColor);
+  // mobile preview
+  const mobileBg = bannerBg;
+  const mobileTC = textOnBg(mobileBg);
+  const mobileIsDark = mobileTC === '#ffffff';
+  const mobilePillBg = mobileIsDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
+  const mobileCardBg = mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
+  const mobileImgBg = mobileIsDark ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.8)';
+  const phoneScale = typeof window !== 'undefined'
+    ? Math.min(1, Math.max(0.72, (window.innerHeight * 0.88 - 56) / 836))
+    : 0.88;
 
   if (isError) return <ErrorState onRetry={refetch} />;
 
@@ -325,11 +335,14 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground truncate">{profile.slug}</p>
                       {logoFile && <p className="text-xs text-[#007AFF] mt-0.5">{logoFile.name}</p>}
                     </div>
-                    {currentBanner && (
-                      <Badge variant={currentBanner.is_active ? 'default' : 'secondary'} className="text-xs shrink-0">
-                        {currentBanner.is_active ? 'Баннер активен' : 'Баннер неактивен'}
-                      </Badge>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setMobilePreviewOpen(true)}
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 transition-colors"
+                    >
+                      <Smartphone className="h-3.5 w-3.5" />
+                      Мобильное отображение
+                    </button>
                   </div>
                 </div>
               </CardContent>
@@ -471,6 +484,182 @@ export default function ProfilePage() {
                 <Trash2 className="h-5 w-5" />Удалить
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile preview overlay ──────────────────────────────────── */}
+      {mobilePreviewOpen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 backdrop-blur-md p-4"
+          onClick={() => setMobilePreviewOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            onClick={() => setMobilePreviewOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          <p className="text-[11px] font-medium text-white/40 uppercase tracking-widest shrink-0">
+            Мобильное отображение
+          </p>
+
+          {/* Phone frame */}
+          <div
+            style={{
+              transform: `scale(${phoneScale})`,
+              transformOrigin: 'top center',
+              marginBottom: `${(812 + 24) * (phoneScale - 1)}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="relative overflow-hidden"
+              style={{
+                width: 375,
+                height: 812,
+                borderRadius: 54,
+                border: '12px solid #111',
+                boxShadow: '0 0 0 1px #2a2a2a, 0 40px 100px rgba(0,0,0,0.8)',
+              }}
+            >
+              <div
+                className="h-full overflow-y-auto"
+                style={{ background: mobileBg, scrollbarWidth: 'none' } as React.CSSProperties}
+              >
+                {/* Banner + navigation */}
+                <div className="relative" style={{ height: 310 }}>
+                  {currentBanner?.image ? (
+                    <img src={currentBanner.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full" style={{ background: mobileBg }} />
+                  )}
+                  {/* Gradient blending banner into page bg */}
+                  <div
+                    className="absolute bottom-0 inset-x-0 h-28 pointer-events-none"
+                    style={{ background: `linear-gradient(transparent, ${mobileBg})` }}
+                  />
+                  {/* Status bar */}
+                  <div className="absolute top-0 inset-x-0 flex justify-between items-center px-6 pt-3">
+                    <span className="text-[13px] font-semibold" style={{ color: mobileTC }}>1:39</span>
+                    <div className="flex items-center gap-1.5" style={{ color: mobileTC }}>
+                      <Wifi className="h-[13px] w-[13px]" />
+                      <span className="text-[12px] font-medium">66%</span>
+                    </div>
+                  </div>
+                  {/* Nav buttons */}
+                  <div className="absolute inset-x-4 flex justify-between items-center" style={{ top: 52 }}>
+                    <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
+                      <ChevronLeft className="h-5 w-5 text-gray-800" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
+                        <Heart className="h-[15px] w-[15px] text-gray-800" />
+                      </div>
+                      <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
+                        <MoreHorizontal className="h-[15px] w-[15px] text-gray-800" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logo — iOS-style rounded square, centered, overlapping banner */}
+                <div className="flex justify-center -mt-10 relative z-10">
+                  <div
+                    className="overflow-hidden shadow-xl"
+                    style={{ width: 76, height: 76, borderRadius: 18, background: 'white' }}
+                  >
+                    {currentLogoUrl ? (
+                      <img src={currentLogoUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Building2 className="h-9 w-9 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Merchant name + address */}
+                <div className="px-5 pt-3 pb-4 text-center">
+                  <h2 className="text-[20px] font-bold leading-tight" style={{ color: mobileTC }}>
+                    {profile?.name ?? 'Название компании'}
+                  </h2>
+                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                    <span className="text-[13px]" style={{ color: mobileTC, opacity: 0.7 }}>
+                      {outlets[0]?.address ?? 'Авиагородок-22, 2'}
+                    </span>
+                    <span className="text-[13px]" style={{ color: mobileTC, opacity: 0.45 }}>•</span>
+                    <Star className="h-3 w-3" style={{ fill: '#F59E0B', color: '#F59E0B' }} />
+                    <span className="text-[13px] font-semibold" style={{ color: mobileTC, opacity: 0.85 }}>4.9</span>
+                  </div>
+                </div>
+
+                {/* Three pill buttons */}
+                <div className="flex gap-2 px-4 pb-5">
+                  {([
+                    { icon: <Info className="h-[13px] w-[13px]" />, label: 'Инфо...' },
+                    { icon: <StoreIcon className="h-[13px] w-[13px]" />, label: 'Фили...' },
+                    { icon: <MessageCircle className="h-[13px] w-[13px]" />, label: 'Отзы...' },
+                  ] as const).map(({ icon, label }) => (
+                    <div
+                      key={label}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[13px] font-medium"
+                      style={{ background: mobilePillBg, color: mobileTC }}
+                    >
+                      {icon}{label}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Separator */}
+                <div
+                  className="mx-4 mb-4 h-px"
+                  style={{ background: mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }}
+                />
+
+                {/* Deals */}
+                <div className="px-4 pb-8">
+                  <h3 className="text-[16px] font-bold mb-3" style={{ color: mobileTC }}>
+                    1+1 предложения
+                  </h3>
+                  <div className="space-y-2.5">
+                    {[
+                      { title: '1 + 1 Акция', price: '100 000 soʻm dan', expire: '31.04.2026', locked: false },
+                      { title: '1 + 1 Акция', price: '150 000 soʻm dan', expire: '31.04.2026', locked: true },
+                    ].map((deal, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: mobileCardBg }}>
+                        <div
+                          className="h-[68px] w-[68px] rounded-2xl flex items-center justify-center shrink-0 text-[26px]"
+                          style={{ background: mobileImgBg }}
+                        >
+                          🍽️
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px]" style={{ color: mobileTC, opacity: 0.65 }}>{deal.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[14px] font-bold" style={{ color: mobileTC }}>{deal.price}</p>
+                            <span className="px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-yellow-400 text-gray-900">1+1</span>
+                          </div>
+                          <p className="text-[11px] mt-0.5" style={{ color: mobileTC, opacity: 0.55 }}>
+                            Срок действия: {deal.expire}
+                          </p>
+                        </div>
+                        {deal.locked && (
+                          <Lock className="h-[15px] w-[15px] shrink-0" style={{ color: mobileTC, opacity: 0.45 }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Home indicator */}
+              <div className="absolute bottom-2 inset-x-0 flex justify-center pointer-events-none">
+                <div className="w-28 h-1 rounded-full bg-black/20" />
+              </div>
+            </div>
           </div>
         </div>
       )}
