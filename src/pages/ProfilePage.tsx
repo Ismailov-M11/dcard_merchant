@@ -304,15 +304,15 @@ export default function ProfilePage() {
                   </div>
                 </button>
 
-                {/* Logo + name row — logo overlaps banner */}
-                <div className="flex items-end gap-4 px-5 pb-4 -mt-8 relative">
+                {/* Info row: avatar pulled up to overlap banner, text fully below */}
+                <div className="relative px-5 pb-4 pt-2 min-h-[52px]">
                   <button
                     type="button"
                     onClick={() => setLogoDialogOpen(true)}
-                    className="relative group shrink-0"
+                    className="absolute -top-9 left-5 group z-10"
                     title="Управление логотипом"
                   >
-                    <Avatar className="h-16 w-16 ring-4 ring-background shadow-lg">
+                    <Avatar className="h-[72px] w-[72px] ring-4 ring-background shadow-lg">
                       <AvatarImage src={currentLogoUrl ?? undefined} />
                       <AvatarFallback className="bg-muted"><Building2 className="h-8 w-8 text-muted-foreground" /></AvatarFallback>
                     </Avatar>
@@ -320,18 +320,18 @@ export default function ProfilePage() {
                       <Eye className="h-4 w-4 text-white" />
                     </div>
                   </button>
-                  <div className="pb-1 flex-1 min-w-0">
-                    <h2 className="text-xl font-bold leading-tight truncate">{profile.name}</h2>
-                    <p className="text-sm text-muted-foreground truncate">{profile.slug}</p>
-                    {logoFile && <p className="text-xs text-[#007AFF] mt-0.5">{logoFile.name}</p>}
-                  </div>
-                  {currentBanner && (
-                    <div className="flex items-center gap-2 pb-1">
-                      <Badge variant={currentBanner.is_active ? 'default' : 'secondary'} className="text-xs">
+                  <div className="pl-[88px] flex items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0">
+                      <h2 className="text-xl font-bold leading-tight truncate">{profile.name}</h2>
+                      <p className="text-sm text-muted-foreground truncate">{profile.slug}</p>
+                      {logoFile && <p className="text-xs text-[#007AFF] mt-0.5">{logoFile.name}</p>}
+                    </div>
+                    {currentBanner && (
+                      <Badge variant={currentBanner.is_active ? 'default' : 'secondary'} className="text-xs shrink-0">
                         {currentBanner.is_active ? 'Баннер активен' : 'Баннер неактивен'}
                       </Badge>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -478,7 +478,7 @@ export default function ProfilePage() {
             <DialogTitle>{editingBanner ? 'Редактировать баннер' : 'Добавить баннер'}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+          <div className="pt-2">
             {/* Left: controls */}
             <div className="space-y-4">
               {/* Image upload */}
@@ -554,25 +554,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Right: live preview */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium block">Предпросмотр</Label>
-              <div className="rounded-2xl overflow-hidden shadow-lg" style={{ background: bannerColor }}>
-                <div style={{ aspectRatio: '16/9' }}>
-                  {bannerPreviewUrl ? (
-                    <img src={bannerPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center" style={{ color: previewTextColor, opacity: 0.4 }}>
-                      Предпросмотр
-                    </div>
-                  )}
-                </div>
-                <div className="px-4 py-3" style={{ color: previewTextColor }}>
-                  <p className="font-semibold text-sm">{profile?.name ?? 'Название'}</p>
-                  <p className="text-xs opacity-70 mt-0.5">{outlets[0] ? `${outlets[0].city}, ${outlets[0].address}` : 'Адрес филиала'}</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Actions */}
