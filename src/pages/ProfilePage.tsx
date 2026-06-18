@@ -143,6 +143,13 @@ export default function ProfilePage() {
   const [bannerFormVisible, setBannerFormVisible] = useState(false);
   const [mobilePreviewVisible, setMobilePreviewVisible] = useState(false);
 
+  // lock body scroll while any overlay is open
+  useEffect(() => {
+    const anyOpen = logoDialogVisible || bannerFormVisible || mobilePreviewVisible;
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [logoDialogVisible, bannerFormVisible, mobilePreviewVisible]);
+
   // profile query
   const { data: profile, isLoading, isError, refetch } = useQuery<Partner>({
     queryKey: ['partnerProfile'],
