@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Building2, ImageUp, FileText, ExternalLink, Trash2, Eye } from 'lucide-react';
+import { Loader2, Building2, ImageUp, FileText, ExternalLink, Trash2, Eye, X } from 'lucide-react';
 import { fetchPartnerProfile, updatePartnerProfile } from '@/api/partnerProfile';
 import type { Partner } from '@/types';
 import { PageHeader } from '@/components/PageHeader';
@@ -15,8 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { mediaUrl } from '@/lib/assets';
 
 const profileSchema = z.object({
@@ -182,13 +182,23 @@ export default function ProfilePage() {
             {/* Description */}
             <Card>
               <CardHeader><CardTitle>Описание</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <FormField control={form.control} name="description_ru" render={({ field }) => (
-                  <FormItem><FormLabel>Описание (RU)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="description_uz" render={({ field }) => (
-                  <FormItem><FormLabel>Описание (UZ)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
+              <CardContent>
+                <Tabs defaultValue="ru">
+                  <TabsList className="mb-3">
+                    <TabsTrigger value="ru">RU</TabsTrigger>
+                    <TabsTrigger value="uz">UZ</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="ru">
+                    <FormField control={form.control} name="description_ru" render={({ field }) => (
+                      <FormItem><FormControl><Textarea rows={4} placeholder="Описание на русском" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </TabsContent>
+                  <TabsContent value="uz">
+                    <FormField control={form.control} name="description_uz" render={({ field }) => (
+                      <FormItem><FormControl><Textarea rows={4} placeholder="O'zbek tilida tavsif" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
@@ -256,52 +266,68 @@ export default function ProfilePage() {
         </Form>
       ) : null}
 
-      {/* Logo lightbox dialog */}
-      <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-black/90 border-0 shadow-2xl">
-          <div className="flex flex-col items-center gap-0">
-            <div className="w-full flex items-center justify-center min-h-[320px] max-h-[60vh] p-6 bg-black/60">
-              {currentLogoUrl ? (
-                <img
-                  src={currentLogoUrl}
-                  alt="Логотип"
-                  className="max-h-[52vh] max-w-full object-contain rounded-xl drop-shadow-2xl"
-                />
-              ) : (
-                <Building2 className="h-20 w-20 text-white/40" />
-              )}
-            </div>
-            <div className="flex gap-3 flex-wrap justify-center py-5 px-6 w-full bg-black/80 border-t border-white/10">
-              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors select-none">
-                <ImageUp className="h-4 w-4" />
-                Загрузить
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    setLogoFile(e.target.files?.[0] ?? null);
-                    setDeleteLogo(false);
-                    setLogoDialogOpen(false);
-                  }}
-                />
-              </label>
-              {currentLogoUrl && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10 hover:text-white bg-transparent"
-                  onClick={() => { setDeleteLogo(true); setLogoFile(null); setLogoDialogOpen(false); }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Удалить
-                </Button>
-              )}
-            </div>
+      {/* Logo lightbox */}
+      {logoDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md"
+          onClick={() => setLogoDialogOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            onClick={() => setLogoDialogOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div
+            className="max-w-[85vw] max-h-[75vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {currentLogoUrl ? (
+              <img
+                src={currentLogoUrl}
+                alt="Логотип"
+                className="max-w-[85vw] max-h-[75vh] object-contain rounded-2xl shadow-2xl"
+              />
+            ) : (
+              <div className="h-40 w-40 flex items-center justify-center rounded-2xl bg-white/10">
+                <Building2 className="h-16 w-16 text-white/40" />
+              </div>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <div
+            className="flex gap-3 mt-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors select-none shadow-lg">
+              <ImageUp className="h-4 w-4" />
+              Загрузить
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  setLogoFile(e.target.files?.[0] ?? null);
+                  setDeleteLogo(false);
+                  setLogoDialogOpen(false);
+                }}
+              />
+            </label>
+            {currentLogoUrl && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
+                onClick={() => { setDeleteLogo(true); setLogoFile(null); setLogoDialogOpen(false); }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Удалить
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

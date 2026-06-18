@@ -257,15 +257,13 @@ export default function SalesPage() {
         </TabsList>
 
         <TabsContent value="deals">
-          <div className="flex gap-3 mb-4 flex-wrap items-center justify-between">
-            <div className="flex gap-3 flex-wrap">
-              <SearchInput value={search} onChange={setSearch} className="w-64" />
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
-                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Button onClick={() => openCreate('deals')}>
+          <div className="flex gap-3 mb-4 items-center">
+            <SearchInput value={search} onChange={setSearch} className="flex-1" />
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
+              <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button onClick={() => openCreate('deals')} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" />Создать акцию
             </Button>
           </div>
@@ -273,15 +271,13 @@ export default function SalesPage() {
         </TabsContent>
 
         <TabsContent value="discounts">
-          <div className="flex gap-3 mb-4 flex-wrap items-center justify-between">
-            <div className="flex gap-3 flex-wrap">
-              <SearchInput value={search} onChange={setSearch} className="w-64" />
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
-                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Button onClick={() => openCreate('discounts')}>
+          <div className="flex gap-3 mb-4 items-center">
+            <SearchInput value={search} onChange={setSearch} className="flex-1" />
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
+              <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button onClick={() => openCreate('discounts')} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" />Создать скидку
             </Button>
           </div>
