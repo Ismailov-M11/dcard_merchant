@@ -338,7 +338,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setMobilePreviewOpen(true)}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 transition-colors"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[#1A3F75]/10 text-[#1A3F75] hover:bg-[#1A3F75]/20 transition-colors"
                     >
                       <Smartphone className="h-3.5 w-3.5" />
                       Мобильное отображение
