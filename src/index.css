@@ -327,6 +327,33 @@ body {
 .page-far      { animation: page-far      0.40s cubic-bezier(0.16,1,0.3,1) both; }
 .page-far-rev  { animation: page-far-rev  0.40s cubic-bezier(0.16,1,0.3,1) both; }
 
+/* ─── Login page floating blobs ─────────────────────────────────────── */
+@keyframes login-blob-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(48px, -64px) scale(1.06); }
+  55%  { transform: translate(-28px, -36px) scale(0.95); }
+  78%  { transform: translate(36px, 48px) scale(1.04); }
+}
+@keyframes login-blob-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30%  { transform: translate(-56px, 44px) scale(1.08); }
+  65%  { transform: translate(44px, -52px) scale(0.93); }
+}
+@keyframes login-blob-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(44px, 56px) scale(1.10); }
+  75%  { transform: translate(-44px, 16px) scale(0.91); }
+}
+@keyframes login-blob-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-28px, -56px) scale(1.05); }
+}
+
+.login-blob-1 { animation: login-blob-1 14s ease-in-out infinite; }
+.login-blob-2 { animation: login-blob-2 19s ease-in-out infinite; }
+.login-blob-3 { animation: login-blob-3 11s ease-in-out infinite; }
+.login-blob-4 { animation: login-blob-4 23s ease-in-out infinite; }
+
 /* ─── Login curtain animations ──────────────────────────────────────── */
 @keyframes curtain-up {
   0%   { transform: translateY(0); }

@@ -44,15 +44,47 @@ const LoginPage = () => {
       style={{ background: 'var(--ios-bg)' }}
       onAnimationEnd={(leaving || entering) ? handleAnimationEnd : undefined}
     >
-      {/* Subtle background pattern */}
+      {/* Animated background blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Blob 1 — top right, large blue */}
         <div
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-30"
-          style={{ background: 'radial-gradient(circle, rgba(0,122,255,0.12) 0%, transparent 70%)' }}
+          className="login-blob-1 absolute rounded-full"
+          style={{
+            top: '-18%', right: '-14%',
+            width: '58vw', height: '58vw',
+            background: 'rgba(0,122,255,0.14)',
+            filter: 'blur(80px)',
+          }}
         />
+        {/* Blob 2 — bottom left, cyan */}
         <div
-          className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, rgba(0,173,255,0.15) 0%, transparent 70%)' }}
+          className="login-blob-2 absolute rounded-full"
+          style={{
+            bottom: '-22%', left: '-18%',
+            width: '62vw', height: '62vw',
+            background: 'rgba(0,173,255,0.11)',
+            filter: 'blur(90px)',
+          }}
+        />
+        {/* Blob 3 — mid left, soft indigo */}
+        <div
+          className="login-blob-3 absolute rounded-full"
+          style={{
+            top: '22%', left: '8%',
+            width: '34vw', height: '34vw',
+            background: 'rgba(88,86,214,0.07)',
+            filter: 'blur(70px)',
+          }}
+        />
+        {/* Blob 4 — bottom right, soft blue */}
+        <div
+          className="login-blob-4 absolute rounded-full"
+          style={{
+            bottom: '-8%', right: '-4%',
+            width: '44vw', height: '44vw',
+            background: 'rgba(0,122,255,0.08)',
+            filter: 'blur(100px)',
+          }}
         />
       </div>
 
