@@ -190,13 +190,6 @@ const LoginPage = () => {
           </button>
         </form>
 
-        {/* Demo hint */}
-        <p
-          className="text-xs text-center mt-5"
-          style={{ color: 'var(--ios-text-secondary)' }}
-        >
-          Для демо оставьте поля пустыми
-        </p>
       </div>
     </div>
   );

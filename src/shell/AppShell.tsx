@@ -7,7 +7,7 @@ import { PageTransition } from '@/components/PageTransition';
 export function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--ios-bg)' }}>
-      <div className="hidden md:flex">
+      <div className="hidden md:flex overflow-hidden">
         <Sidebar />
       </div>
 
