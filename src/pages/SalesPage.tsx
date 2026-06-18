@@ -9,7 +9,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { fetchMerchantDeals, createDeal, updateDeal, updateDealStatus } from '@/api/deals';
 import { fetchPartners } from '@/api/outlets';
 import { fetchSubscriptionPlans } from '@/api/plans';
-import { fetchPartnerDiscounts, requestPartnerDiscount } from '@/api/partnerDiscounts';
 import type { MerchantDeal, DealStatus, Partner, SubscriptionPlanSummary } from '@/types';
 import { PageHeader } from '@/components/PageHeader';
 import { DataTable } from '@/components/DataTable';
@@ -29,7 +28,7 @@ import { fmtDate } from '@/lib/dates';
 import { mediaUrl } from '@/lib/assets';
 
 const dealSchema = z.object({
-  partner_id: z.string().min(1, 'Выберите партнёра'),
+  partner_id: z.string().min(1),
   subscription_plan: z.string().min(1, 'Выберите план'),
   offer_type: z.string().min(1, 'Выберите тип'),
   price: z.string().optional(),
@@ -43,7 +42,7 @@ const dealSchema = z.object({
 });
 type DealFormValues = z.infer<typeof dealSchema>;
 
-const OFFER_TYPES = [
+const ALL_OFFER_TYPES = [
   { value: 'discount', label: 'Скидка' },
   { value: 'one_plus_one', label: '1+1' },
   { value: 'exclusive', label: 'Эксклюзив' },
@@ -129,6 +128,10 @@ export default function SalesPage() {
   const [statusFilter, setStatusFilter] = useState<DealStatus | 'all'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editDeal, setEditDeal] = useState<MerchantDeal | null>(null);
+  // 'deals' = акции tab, 'discounts' = скидки по планам tab
+  const [activeTab, setActiveTab] = useState<'deals' | 'discounts'>('deals');
+  const [modalOrigin, setModalOrigin] = useState<'deals' | 'discounts'>('deals');
+
   const { data: deals = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['deals', statusFilter, search],
     queryFn: () => fetchMerchantDeals({ status: statusFilter, search: search || undefined }),
@@ -137,6 +140,27 @@ export default function SalesPage() {
   const { data: plans = [] } = useQuery<SubscriptionPlanSummary[]>({ queryKey: ['plans'], queryFn: fetchSubscriptionPlans });
 
   const form = useForm<DealFormValues>({ resolver: zodResolver(dealSchema) });
+
+  useEffect(() => {
+    if (partners.length > 0) {
+      form.setValue('partner_id', String(partners[0].id));
+    }
+  }, [partners, form]);
+
+  const openCreate = (origin: 'deals' | 'discounts') => {
+    setModalOrigin(origin);
+    setEditDeal(null);
+    form.reset({ partner_id: String(partners[0]?.id ?? ''), subscription_plan: '', offer_type: '' });
+    setFormOpen(true);
+  };
+
+  const offerTypesForModal = useMemo(() => {
+    if (modalOrigin === 'deals') return ALL_OFFER_TYPES.filter((t) => t.value !== 'discount');
+    return ALL_OFFER_TYPES.filter((t) => t.value === 'discount');
+  }, [modalOrigin]);
+
+  const dealsData = useMemo(() => deals.filter((d) => d.offer_type !== 'discount'), [deals]);
+  const discountsData = useMemo(() => deals.filter((d) => d.offer_type === 'discount'), [deals]);
 
   const createMutation = useMutation({
     mutationFn: (v: DealFormValues) => createDeal({
@@ -198,6 +222,7 @@ export default function SalesPage() {
         return (
           <div className="flex gap-1 items-center">
             <Button size="icon" variant="ghost" onClick={() => {
+              setModalOrigin(d.offer_type === 'discount' ? 'discounts' : 'deals');
               setEditDeal(d);
               form.reset({
                 partner_id: String(d.partner),
@@ -222,52 +247,45 @@ export default function SalesPage() {
 
   if (isError) return <ErrorState onRetry={refetch} />;
 
-  const firstPartnerId = partners[0]?.id;
-
-  const DiscountsTab = () => {
-    const discounts = useQuery({
-      queryKey: ['discounts', firstPartnerId],
-      queryFn: () => fetchPartnerDiscounts(firstPartnerId!),
-      enabled: !!firstPartnerId,
-    });
-    return (
-      <div className="space-y-4">
-        {discounts.data?.map((d) => (
-          <div key={d.id} className="flex items-center justify-between p-3 border rounded-md">
-            <div>
-              <p className="text-sm font-medium">{d.subscription_plan_detail?.name ?? `План ${d.subscription_plan}`}</p>
-              <p className="text-xs text-muted-foreground">Скидка {d.discount_percent}%</p>
-            </div>
-            <StatusBadge status={d.status} />
-          </div>
-        ))}
-        {(!discounts.data || discounts.data.length === 0) && (
-          <p className="text-sm text-muted-foreground text-center py-8">Нет скидок по подпискам</p>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div>
-      <PageHeader title="Акции" description="Специальные предложения и скидки для клиентов" actions={<Button onClick={() => { setFormOpen(true); form.reset(); }}><Plus className="h-4 w-4 mr-1" />Создать акцию</Button>} />
-      <Tabs defaultValue="deals">
+      <PageHeader title="Акции" description="Специальные предложения и скидки для клиентов" />
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'deals' | 'discounts')}>
         <TabsList className="mb-4">
           <TabsTrigger value="deals">Акции</TabsTrigger>
           <TabsTrigger value="discounts">Скидки по планам</TabsTrigger>
         </TabsList>
+
         <TabsContent value="deals">
-          <div className="flex gap-3 mb-4 flex-wrap">
-            <SearchInput value={search} onChange={setSearch} className="w-64" />
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="flex gap-3 mb-4 flex-wrap items-center justify-between">
+            <div className="flex gap-3 flex-wrap">
+              <SearchInput value={search} onChange={setSearch} className="w-64" />
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => openCreate('deals')}>
+              <Plus className="h-4 w-4 mr-1" />Создать акцию
+            </Button>
           </div>
-          <DataTable columns={columns} data={deals} isLoading={isLoading} />
+          <DataTable columns={columns} data={dealsData} isLoading={isLoading} />
         </TabsContent>
+
         <TabsContent value="discounts">
-          <DiscountsTab />
+          <div className="flex gap-3 mb-4 flex-wrap items-center justify-between">
+            <div className="flex gap-3 flex-wrap">
+              <SearchInput value={search} onChange={setSearch} className="w-64" />
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'all')}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>{STATUS_OPTS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => openCreate('discounts')}>
+              <Plus className="h-4 w-4 mr-1" />Создать скидку
+            </Button>
+          </div>
+          <DataTable columns={columns} data={discountsData} isLoading={isLoading} />
         </TabsContent>
       </Tabs>
 
@@ -275,18 +293,10 @@ export default function SalesPage() {
       <Dialog open={formOpen || !!editDeal} onOpenChange={(o) => { if (!o) { setFormOpen(false); setEditDeal(null); } }}>
         <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>{editDeal ? 'Редактировать акцию' : 'Новая акция'}</DialogTitle>
+            <DialogTitle>{editDeal ? 'Редактировать акцию' : (modalOrigin === 'discounts' ? 'Новая скидка' : 'Новая акция')}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit((v) => editDeal ? updateMutation.mutate(v) : createMutation.mutate(v))} className="space-y-4">
-              <FormField control={form.control} name="partner_id" render={({ field }) => (
-                <FormItem><FormLabel>Партнёр</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Выберите партнёра" /></SelectTrigger></FormControl>
-                    <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FormMessage /></FormItem>
-              )} />
               <FormField control={form.control} name="subscription_plan" render={({ field }) => (
                 <FormItem><FormLabel>План подписки</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
@@ -299,7 +309,7 @@ export default function SalesPage() {
                 <FormItem><FormLabel>Тип акции</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Тип" /></SelectTrigger></FormControl>
-                    <SelectContent>{OFFER_TYPES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    <SelectContent>{offerTypesForModal.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <FormMessage /></FormItem>
               )} />

@@ -11,6 +11,9 @@ export function fetchMockSalesAnalytics(): Promise<SalesAnalytics> {
     total_orders: 87,
     total_discount: 2_340_000,
     avg_order: 143_103,
+    revenue_by_discount: 5_200_000,
+    revenue_by_one_plus_one: 4_150_000,
+    revenue_by_exclusive: 3_100_000,
     points: [
       { date: '2026-06-07', revenue: 1_800_000, orders: 12, discount_amount: 360_000 },
       { date: '2026-06-08', revenue: 2_100_000, orders: 15, discount_amount: 420_000 },
@@ -49,6 +52,11 @@ export function fetchMockRatingAnalytics(): Promise<RatingAnalytics> {
       { stars: 3, count: 15 },
       { stars: 2, count: 7 },
       { stars: 1, count: 4 },
+    ],
+    by_outlet: [
+      { outlet_id: 1, outlet_name: 'Центральный филиал', avg_rating: 4.6, total_reviews: 74 },
+      { outlet_id: 2, outlet_name: 'Филиал Чиланзар', avg_rating: 4.1, total_reviews: 31 },
+      { outlet_id: 3, outlet_name: 'Филиал Юнусабад', avg_rating: 3.9, total_reviews: 21 },
     ],
   });
 }
