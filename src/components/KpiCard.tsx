@@ -7,10 +7,11 @@ interface KpiCardProps {
   value: ReactNode;
   delta?: number;
   icon?: ReactNode;
+  action?: ReactNode;
   className?: string;
 }
 
-export function KpiCard({ title, value, delta, icon, className }: KpiCardProps) {
+export function KpiCard({ title, value, delta, icon, action, className }: KpiCardProps) {
   return (
     <Card className={cn('', className)}>
       <CardContent className="p-5">
@@ -22,7 +23,10 @@ export function KpiCard({ title, value, delta, icon, className }: KpiCardProps) 
             </span>
           )}
         </div>
-        <div className="text-2xl font-bold tnum text-foreground">{value}</div>
+        <div className="flex items-end justify-between gap-2">
+          <div className="text-2xl font-bold tnum text-foreground">{value}</div>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
         {delta !== undefined && (
           <p className={cn('text-xs mt-1.5', delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
             {delta >= 0 ? '+' : ''}{delta.toFixed(1)}% к прошлому месяцу

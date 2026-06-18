@@ -256,19 +256,23 @@ export default function ProfilePage() {
         </Form>
       ) : null}
 
-      {/* Logo management dialog */}
+      {/* Logo lightbox dialog */}
       <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
-        <DialogContent className="sm:max-w-xs">
-          <div className="flex flex-col items-center gap-5 py-2">
-            <div className="h-32 w-32 rounded-2xl overflow-hidden border bg-muted flex items-center justify-center">
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-black/90 border-0 shadow-2xl">
+          <div className="flex flex-col items-center gap-0">
+            <div className="w-full flex items-center justify-center min-h-[320px] max-h-[60vh] p-6 bg-black/60">
               {currentLogoUrl ? (
-                <img src={currentLogoUrl} alt="Логотип" className="h-full w-full object-contain" />
+                <img
+                  src={currentLogoUrl}
+                  alt="Логотип"
+                  className="max-h-[52vh] max-w-full object-contain rounded-xl drop-shadow-2xl"
+                />
               ) : (
-                <Building2 className="h-12 w-12 text-muted-foreground" />
+                <Building2 className="h-20 w-20 text-white/40" />
               )}
             </div>
-            <div className="flex gap-2 flex-wrap justify-center">
-              <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors shadow-sm select-none">
+            <div className="flex gap-3 flex-wrap justify-center py-5 px-6 w-full bg-black/80 border-t border-white/10">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-primary-foreground bg-[#1A3F75] hover:bg-[#1D4A90] transition-colors select-none">
                 <ImageUp className="h-4 w-4" />
                 Загрузить
                 <input
@@ -287,7 +291,7 @@ export default function ProfilePage() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  className="border-white/20 text-white hover:bg-white/10 hover:text-white bg-transparent"
                   onClick={() => { setDeleteLogo(true); setLogoFile(null); setLogoDialogOpen(false); }}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
@@ -295,7 +299,6 @@ export default function ProfilePage() {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">PNG, JPG, SVG до 5 МБ</p>
           </div>
         </DialogContent>
       </Dialog>

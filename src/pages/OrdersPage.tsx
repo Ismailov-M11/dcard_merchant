@@ -14,10 +14,13 @@ import { SearchInput } from '@/components/SearchInput';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { fmtDateTime } from '@/lib/dates';
-import { Loader2, UserCheck } from 'lucide-react';
+import { Loader2, UserCheck, SlidersHorizontal, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 const SALE_TYPE_OPTIONS = [
   { value: 'all', label: 'Все типы' },
@@ -30,14 +33,23 @@ export default function OrdersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Filters
+  // Active filter state
   const [outletFilter, setOutletFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [dealFilter, setDealFilter] = useState('all');
   const [staffFilter, setStaffFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  // Draft filter state (inside modal, applied on confirm)
+  const [draftOutlet, setDraftOutlet] = useState('all');
+  const [draftType, setDraftType] = useState('all');
+  const [draftDeal, setDraftDeal] = useState('all');
+  const [draftStaff, setDraftStaff] = useState('all');
+  const [draftDateFrom, setDraftDateFrom] = useState('');
+  const [draftDateTo, setDraftDateTo] = useState('');
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
@@ -62,7 +74,6 @@ export default function OrdersPage() {
 
   const allOrders = useMemo(() => data?.results ?? [], [data]);
 
-  // Unique values for filter dropdowns
   const uniqueOutlets = useMemo(() => {
     const map = new Map<number, string>();
     allOrders.forEach((o) => map.set(o.outlet_id, o.outlet_name));
@@ -100,6 +111,53 @@ export default function OrdersPage() {
       return true;
     });
   }, [allOrders, search, outletFilter, typeFilter, dealFilter, staffFilter, dateFrom, dateTo]);
+
+  const activeFilterCount = [
+    outletFilter !== 'all',
+    typeFilter !== 'all',
+    dealFilter !== 'all',
+    staffFilter !== 'all',
+    !!dateFrom,
+    !!dateTo,
+  ].filter(Boolean).length;
+
+  const openFilters = () => {
+    setDraftOutlet(outletFilter);
+    setDraftType(typeFilter);
+    setDraftDeal(dealFilter);
+    setDraftStaff(staffFilter);
+    setDraftDateFrom(dateFrom);
+    setDraftDateTo(dateTo);
+    setFiltersOpen(true);
+  };
+
+  const applyFilters = () => {
+    setOutletFilter(draftOutlet);
+    setTypeFilter(draftType);
+    setDealFilter(draftDeal);
+    setStaffFilter(draftStaff);
+    setDateFrom(draftDateFrom);
+    setDateTo(draftDateTo);
+    setFiltersOpen(false);
+  };
+
+  const resetFilters = () => {
+    setDraftOutlet('all');
+    setDraftType('all');
+    setDraftDeal('all');
+    setDraftStaff('all');
+    setDraftDateFrom('');
+    setDraftDateTo('');
+  };
+
+  const clearAllFilters = () => {
+    setOutletFilter('all');
+    setTypeFilter('all');
+    setDealFilter('all');
+    setStaffFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  };
 
   const columns: ColumnDef<Order>[] = useMemo(() => [
     {
@@ -144,83 +202,103 @@ export default function OrdersPage() {
     },
   ], []);
 
-  const resetFilters = () => {
-    setOutletFilter('all');
-    setTypeFilter('all');
-    setDealFilter('all');
-    setStaffFilter('all');
-    setDateFrom('');
-    setDateTo('');
-    setSearch('');
-  };
-
-  const hasActiveFilters = outletFilter !== 'all' || typeFilter !== 'all' || dealFilter !== 'all' || staffFilter !== 'all' || dateFrom || dateTo || search;
-
   if (isError) return <ErrorState onRetry={refetch} />;
 
   return (
     <div>
       <PageHeader title="Заказы" description="Все заказы по вашим акциям" />
 
-      {/* Filters */}
-      <div className="space-y-3 mb-4">
-        <div className="flex gap-3 flex-wrap">
-          <SearchInput value={search} onChange={setSearch} className="w-64" placeholder="Поиск по всем полям" />
-          <Select value={outletFilter} onValueChange={setOutletFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Все филиалы" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все филиалы</SelectItem>
-              {uniqueOutlets.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>{SALE_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={dealFilter} onValueChange={setDealFilter}>
-            <SelectTrigger className="w-52"><SelectValue placeholder="Все акции" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все акции</SelectItem>
-              {uniqueDeals.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={staffFilter} onValueChange={setStaffFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder="Все сотрудники" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все сотрудники</SelectItem>
-              {uniqueStaff.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex gap-3 flex-wrap items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">С</span>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-40 h-9"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">По</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-40 h-9"
-            />
-          </div>
-          {hasActiveFilters && (
-            <Button size="sm" variant="ghost" onClick={resetFilters} className="text-muted-foreground">
-              Сбросить фильтры
-            </Button>
+      <div className="flex gap-3 mb-4 items-center">
+        <SearchInput value={search} onChange={setSearch} className="w-64" placeholder="Поиск по всем полям" />
+        <Button variant="outline" onClick={openFilters} className="relative">
+          <SlidersHorizontal className="h-4 w-4 mr-2" />
+          Фильтры
+          {activeFilterCount > 0 && (
+            <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+              {activeFilterCount}
+            </Badge>
           )}
-        </div>
+        </Button>
+        {activeFilterCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-muted-foreground gap-1">
+            <X className="h-3.5 w-3.5" />
+            Сбросить
+          </Button>
+        )}
       </div>
 
       <DataTable columns={columns} data={filtered} isLoading={isLoading} />
 
+      {/* Filters modal */}
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Фильтры</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Филиал</Label>
+              <Select value={draftOutlet} onValueChange={setDraftOutlet}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все филиалы</SelectItem>
+                  {uniqueOutlets.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Тип акции</Label>
+              <Select value={draftType} onValueChange={setDraftType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SALE_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Акция / скидка</Label>
+              <Select value={draftDeal} onValueChange={setDraftDeal}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все акции</SelectItem>
+                  {uniqueDeals.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Сотрудник</Label>
+              <Select value={draftStaff} onValueChange={setDraftStaff}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все сотрудники</SelectItem>
+                  {uniqueStaff.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Дата с</Label>
+                <Input type="date" value={draftDateFrom} onChange={(e) => setDraftDateFrom(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Дата по</Label>
+                <Input type="date" value={draftDateTo} onChange={(e) => setDraftDateTo(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex justify-between pt-2">
+            <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground">
+              Сбросить всё
+            </Button>
+            <Button onClick={applyFilters}>
+              Применить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Order detail sheet */}
       <Sheet open={selectedId !== null} onOpenChange={(o) => !o && setSelectedId(null)}>
         <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader><SheetTitle>Детали заказа</SheetTitle></SheetHeader>
