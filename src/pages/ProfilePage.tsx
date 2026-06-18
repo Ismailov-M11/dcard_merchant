@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -267,9 +267,10 @@ export default function ProfilePage() {
   const mobilePillBg = mobileIsDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
   const mobileCardBg = mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
   const mobileImgBg = mobileIsDark ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.8)';
+  // iPhone 17 Pro Max: 430×932 screen + 12px border each side = 454×956 frame
   const phoneScale = typeof window !== 'undefined'
-    ? Math.min(1, Math.max(0.72, (window.innerHeight * 0.88 - 56) / 836))
-    : 0.88;
+    ? Math.min(1, Math.max(0.60, (window.innerHeight * 0.96) / 956))
+    : 0.82;
 
   if (isError) return <ErrorState onRetry={refetch} />;
 
@@ -488,167 +489,167 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── Mobile preview overlay ──────────────────────────────────── */}
+      {/* ── Mobile preview overlay ────────────────────────────── */}
       {mobilePreviewOpen && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/75 backdrop-blur-md p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
           onClick={() => setMobilePreviewOpen(false)}
         >
           <button
             type="button"
-            className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
             onClick={() => setMobilePreviewOpen(false)}
           >
             <X className="h-6 w-6" />
           </button>
 
-          <p className="text-[11px] font-medium text-white/40 uppercase tracking-widest shrink-0">
-            Мобильное отображение
-          </p>
-
-          {/* Phone frame */}
+          {/* Scale wrapper */}
           <div
+            className="relative"
             style={{
               transform: `scale(${phoneScale})`,
               transformOrigin: 'top center',
-              marginBottom: `${(812 + 24) * (phoneScale - 1)}px`,
+              marginBottom: `${956 * (phoneScale - 1)}px`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Mute/ring switch (left) */}
+            <div className="absolute" style={{ left: -6, top: 136, width: 6, height: 30, background: '#1c1c1e', borderRadius: '4px 0 0 4px', boxShadow: 'inset -1px 0 2px rgba(255,255,255,0.08)' }} />
+            {/* Volume up (left) */}
+            <div className="absolute" style={{ left: -6, top: 186, width: 6, height: 68, background: '#1c1c1e', borderRadius: '4px 0 0 4px', boxShadow: 'inset -1px 0 2px rgba(255,255,255,0.08)' }} />
+            {/* Volume down (left) */}
+            <div className="absolute" style={{ left: -6, top: 270, width: 6, height: 68, background: '#1c1c1e', borderRadius: '4px 0 0 4px', boxShadow: 'inset -1px 0 2px rgba(255,255,255,0.08)' }} />
+            {/* Power button (right) */}
+            <div className="absolute" style={{ right: -6, top: 208, width: 6, height: 96, background: '#1c1c1e', borderRadius: '0 4px 4px 0', boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.08)' }} />
+
+            {/* Phone body */}
             <div
               className="relative overflow-hidden"
               style={{
-                width: 375,
-                height: 812,
-                borderRadius: 54,
+                width: 430,
+                height: 932,
+                borderRadius: 62,
                 border: '12px solid #111',
-                boxShadow: '0 0 0 1px #2a2a2a, 0 40px 100px rgba(0,0,0,0.8)',
+                background: mobileBg,
+                boxShadow: '0 0 0 1px #2e2e2e, inset 0 0 0 1px rgba(255,255,255,0.04), 0 50px 120px rgba(0,0,0,0.9)',
               }}
             >
+              {/* Dynamic Island */}
+              <div
+                className="absolute z-30 pointer-events-none"
+                style={{ top: 14, left: '50%', transform: 'translateX(-50%)', width: 128, height: 36, background: '#000', borderRadius: 22 }}
+              />
+
+              {/* Status bar around Dynamic Island */}
+              <div
+                className="absolute top-0 inset-x-0 z-20 flex items-center justify-between pointer-events-none"
+                style={{ height: 60, paddingInline: 28 }}
+              >
+                <span className="text-[15px] font-semibold" style={{ color: mobileTC }}>9:41</span>
+                <div className="flex items-center gap-1.5" style={{ color: mobileTC }}>
+                  <Wifi className="h-[14px] w-[14px]" />
+                  <span className="text-[12px] font-semibold">88%</span>
+                </div>
+              </div>
+
+              {/* Scrollable content */}
               <div
                 className="h-full overflow-y-auto"
-                style={{ background: mobileBg, scrollbarWidth: 'none' } as React.CSSProperties}
+                style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
               >
-                {/* Banner + navigation */}
-                <div className="relative" style={{ height: 310 }}>
+                {/* Banner */}
+                <div className="relative" style={{ height: 360 }}>
                   {currentBanner?.image ? (
                     <img src={currentBanner.image} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full" style={{ background: mobileBg }} />
                   )}
-                  {/* Gradient blending banner into page bg */}
                   <div
-                    className="absolute bottom-0 inset-x-0 h-28 pointer-events-none"
+                    className="absolute bottom-0 inset-x-0 h-32 pointer-events-none"
                     style={{ background: `linear-gradient(transparent, ${mobileBg})` }}
                   />
-                  {/* Status bar */}
-                  <div className="absolute top-0 inset-x-0 flex justify-between items-center px-6 pt-3">
-                    <span className="text-[13px] font-semibold" style={{ color: mobileTC }}>1:39</span>
-                    <div className="flex items-center gap-1.5" style={{ color: mobileTC }}>
-                      <Wifi className="h-[13px] w-[13px]" />
-                      <span className="text-[12px] font-medium">66%</span>
-                    </div>
-                  </div>
-                  {/* Nav buttons */}
-                  <div className="absolute inset-x-4 flex justify-between items-center" style={{ top: 52 }}>
-                    <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
+                  {/* Nav buttons below Dynamic Island */}
+                  <div className="absolute inset-x-4 flex justify-between items-center" style={{ top: 72 }}>
+                    <div className="h-[38px] w-[38px] rounded-full bg-white/65 backdrop-blur-sm flex items-center justify-center shadow-md">
                       <ChevronLeft className="h-5 w-5 text-gray-800" />
                     </div>
                     <div className="flex gap-2">
-                      <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
-                        <Heart className="h-[15px] w-[15px] text-gray-800" />
+                      <div className="h-[38px] w-[38px] rounded-full bg-white/65 backdrop-blur-sm flex items-center justify-center shadow-md">
+                        <Heart className="h-[16px] w-[16px] text-gray-800" />
                       </div>
-                      <div className="h-9 w-9 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow">
-                        <MoreHorizontal className="h-[15px] w-[15px] text-gray-800" />
+                      <div className="h-[38px] w-[38px] rounded-full bg-white/65 backdrop-blur-sm flex items-center justify-center shadow-md">
+                        <MoreHorizontal className="h-[16px] w-[16px] text-gray-800" />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Logo — iOS-style rounded square, centered, overlapping banner */}
-                <div className="flex justify-center -mt-10 relative z-10">
-                  <div
-                    className="overflow-hidden shadow-xl"
-                    style={{ width: 76, height: 76, borderRadius: 18, background: 'white' }}
-                  >
+                {/* Logo — iOS rounded square, centered */}
+                <div className="flex justify-center -mt-11 relative z-10">
+                  <div className="overflow-hidden shadow-2xl" style={{ width: 84, height: 84, borderRadius: 20, background: 'white' }}>
                     {currentLogoUrl ? (
                       <img src={currentLogoUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <Building2 className="h-9 w-9 text-gray-400" />
+                        <Building2 className="h-10 w-10 text-gray-400" />
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Merchant name + address */}
-                <div className="px-5 pt-3 pb-4 text-center">
-                  <h2 className="text-[20px] font-bold leading-tight" style={{ color: mobileTC }}>
+                {/* Name + address */}
+                <div className="px-6 pt-3 pb-4 text-center">
+                  <h2 className="text-[22px] font-bold leading-tight" style={{ color: mobileTC }}>
                     {profile?.name ?? 'Название компании'}
                   </h2>
                   <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                    <span className="text-[13px]" style={{ color: mobileTC, opacity: 0.7 }}>
+                    <span className="text-[14px]" style={{ color: mobileTC, opacity: 0.7 }}>
                       {outlets[0]?.address ?? 'Авиагородок-22, 2'}
                     </span>
-                    <span className="text-[13px]" style={{ color: mobileTC, opacity: 0.45 }}>•</span>
-                    <Star className="h-3 w-3" style={{ fill: '#F59E0B', color: '#F59E0B' }} />
-                    <span className="text-[13px] font-semibold" style={{ color: mobileTC, opacity: 0.85 }}>4.9</span>
+                    <span style={{ color: mobileTC, opacity: 0.4 }}>•</span>
+                    <Star className="h-3.5 w-3.5" style={{ fill: '#F59E0B', color: '#F59E0B' }} />
+                    <span className="text-[14px] font-semibold" style={{ color: mobileTC, opacity: 0.85 }}>4.9</span>
                   </div>
                 </div>
 
-                {/* Three pill buttons */}
-                <div className="flex gap-2 px-4 pb-5">
+                {/* Pill buttons */}
+                <div className="flex gap-2.5 px-5 pb-5">
                   {([
-                    { icon: <Info className="h-[13px] w-[13px]" />, label: 'Инфо...' },
-                    { icon: <StoreIcon className="h-[13px] w-[13px]" />, label: 'Фили...' },
-                    { icon: <MessageCircle className="h-[13px] w-[13px]" />, label: 'Отзы...' },
+                    { icon: <Info className="h-[14px] w-[14px]" />, label: 'Инфо...' },
+                    { icon: <StoreIcon className="h-[14px] w-[14px]" />, label: 'Фили...' },
+                    { icon: <MessageCircle className="h-[14px] w-[14px]" />, label: 'Отзы...' },
                   ] as const).map(({ icon, label }) => (
-                    <div
-                      key={label}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[13px] font-medium"
-                      style={{ background: mobilePillBg, color: mobileTC }}
-                    >
+                    <div key={label} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-[14px] font-medium"
+                      style={{ background: mobilePillBg, color: mobileTC }}>
                       {icon}{label}
                     </div>
                   ))}
                 </div>
 
                 {/* Separator */}
-                <div
-                  className="mx-4 mb-4 h-px"
-                  style={{ background: mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }}
-                />
+                <div className="mx-5 mb-4 h-px" style={{ background: mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }} />
 
                 {/* Deals */}
-                <div className="px-4 pb-8">
-                  <h3 className="text-[16px] font-bold mb-3" style={{ color: mobileTC }}>
-                    1+1 предложения
-                  </h3>
-                  <div className="space-y-2.5">
+                <div className="px-5 pb-10">
+                  <h3 className="text-[18px] font-bold mb-3" style={{ color: mobileTC }}>1+1 предложения</h3>
+                  <div className="space-y-3">
                     {[
-                      { title: '1 + 1 Акция', price: '100 000 soʻm dan', expire: '31.04.2026', locked: false },
-                      { title: '1 + 1 Акция', price: '150 000 soʻm dan', expire: '31.04.2026', locked: true },
+                      { title: '1 + 1 Акция', price: "100 000 soʼm dan", expire: '31.04.2026', locked: false },
+                      { title: '1 + 1 Акция', price: "150 000 soʼm dan", expire: '31.04.2026', locked: true },
                     ].map((deal, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-2xl" style={{ background: mobileCardBg }}>
-                        <div
-                          className="h-[68px] w-[68px] rounded-2xl flex items-center justify-center shrink-0 text-[26px]"
-                          style={{ background: mobileImgBg }}
-                        >
+                      <div key={i} className="flex items-center gap-3.5 p-3.5 rounded-2xl" style={{ background: mobileCardBg }}>
+                        <div className="h-[74px] w-[74px] rounded-2xl flex items-center justify-center shrink-0" style={{ background: mobileImgBg, fontSize: 28 }}>
                           🍽️
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px]" style={{ color: mobileTC, opacity: 0.65 }}>{deal.title}</p>
+                          <p className="text-[13px]" style={{ color: mobileTC, opacity: 0.65 }}>{deal.title}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <p className="text-[14px] font-bold" style={{ color: mobileTC }}>{deal.price}</p>
+                            <p className="text-[15px] font-bold" style={{ color: mobileTC }}>{deal.price}</p>
                             <span className="px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-yellow-400 text-gray-900">1+1</span>
                           </div>
-                          <p className="text-[11px] mt-0.5" style={{ color: mobileTC, opacity: 0.55 }}>
-                            Срок действия: {deal.expire}
-                          </p>
+                          <p className="text-[12px] mt-0.5" style={{ color: mobileTC, opacity: 0.55 }}>Срок действия: {deal.expire}</p>
                         </div>
-                        {deal.locked && (
-                          <Lock className="h-[15px] w-[15px] shrink-0" style={{ color: mobileTC, opacity: 0.45 }} />
-                        )}
+                        {deal.locked && <Lock className="h-[16px] w-[16px] shrink-0" style={{ color: mobileTC, opacity: 0.4 }} />}
                       </div>
                     ))}
                   </div>
@@ -656,14 +657,13 @@ export default function ProfilePage() {
               </div>
 
               {/* Home indicator */}
-              <div className="absolute bottom-2 inset-x-0 flex justify-center pointer-events-none">
-                <div className="w-28 h-1 rounded-full bg-black/20" />
+              <div className="absolute bottom-2 inset-x-0 flex justify-center pointer-events-none z-20">
+                <div className="w-32 h-1 rounded-full" style={{ background: mobileIsDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }} />
               </div>
             </div>
           </div>
         </div>
       )}
-
       {/* ── Banner management fullscreen overlay ─────────────────────── */}
       {bannerFormOpen && (
         <div
