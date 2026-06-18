@@ -446,9 +446,9 @@ export default function ProfilePage() {
           <button type="button" className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors" onClick={() => setLogoDialogOpen(false)}>
             <X className="h-5 w-5" />
           </button>
-          <div className="max-w-[85vw] max-h-[75vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-[92vw] max-h-[88vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             {currentLogoUrl ? (
-              <img src={currentLogoUrl} alt="Логотип" className="max-w-[85vw] max-h-[75vh] object-contain rounded-2xl shadow-2xl" />
+              <img src={currentLogoUrl} alt="Логотип" className="max-w-[92vw] max-h-[88vh] object-contain rounded-2xl shadow-2xl" />
             ) : (
               <div className="h-40 w-40 flex items-center justify-center rounded-2xl bg-white/10">
                 <Building2 className="h-16 w-16 text-white/40" />
