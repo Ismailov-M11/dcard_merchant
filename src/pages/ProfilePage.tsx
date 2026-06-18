@@ -575,23 +575,46 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Right: large preview + small upload thumbnail below */}
-            <div className="flex flex-col gap-3 sm:w-[55%]">
-              {/* Preview */}
-              <div
-                className="w-full rounded-2xl overflow-hidden shadow-2xl"
-                style={{ aspectRatio: '16/9', background: bannerColor }}
-              >
-                {bannerPreviewUrl ? (
-                  <img src={bannerPreviewUrl} alt="Предпросмотр" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/30 text-sm">
-                    Предпросмотр
-                  </div>
-                )}
+            {/* Right: DCard-style card preview + upload below */}
+            <div className="flex flex-col gap-4 sm:w-[55%]">
+              <p className="text-sm font-medium text-white/60 uppercase tracking-wide">Preview</p>
+
+              {/* Card preview — mirrors how DCard shows the merchant */}
+              <div className="rounded-2xl overflow-hidden shadow-2xl bg-white">
+                {/* Banner image area */}
+                <div className="w-full" style={{ aspectRatio: '16/9', background: bannerColor }}>
+                  {bannerPreviewUrl ? (
+                    <img src={bannerPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center" style={{ color: textOnBg(bannerColor), opacity: 0.35 }}>
+                      <ImageUp className="h-10 w-10" />
+                    </div>
+                  )}
+                </div>
+                {/* Info section with live background color */}
+                <div className="px-4 pt-3 pb-4" style={{ background: bannerColor }}>
+                  {bannerActive && (
+                    <span
+                      className="inline-block text-xs px-2.5 py-0.5 rounded-full mb-2 font-medium border"
+                      style={{
+                        color: textOnBg(bannerColor),
+                        borderColor: `${textOnBg(bannerColor)}40`,
+                        background: `${textOnBg(bannerColor)}18`,
+                      }}
+                    >
+                      Barcha filiallar uchun
+                    </span>
+                  )}
+                  <p className="text-lg font-bold leading-tight" style={{ color: textOnBg(bannerColor) }}>
+                    {profile?.name ?? 'Название компании'}
+                  </p>
+                  <p className="text-sm mt-0.5 opacity-80" style={{ color: textOnBg(bannerColor) }}>
+                    {outlets[0] ? `${outlets[0].city}, ${outlets[0].address}` : 'Ташкент, улица Навои, 1'}
+                  </p>
+                </div>
               </div>
 
-              {/* Upload control with thumbnail */}
+              {/* Upload control */}
               <div className="flex items-center gap-4">
                 <div
                   className="h-16 w-24 rounded-xl overflow-hidden shrink-0 border-2 border-white/20"
