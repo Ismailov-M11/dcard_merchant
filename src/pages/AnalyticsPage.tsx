@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -9,18 +10,113 @@ import { ErrorState } from '@/components/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fetchMockSalesAnalytics, fetchMockTrafficAnalytics, fetchMockRatingAnalytics } from '@/api/mock';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { fetchMockSalesAnalytics, fetchMockTrafficAnalytics, fetchMockRatingAnalytics, fetchMockReviews } from '@/api/mock';
 import { formatMoney } from '@/lib/money';
+import { fmtDate } from '@/lib/dates';
+import { Star, MessageSquare } from 'lucide-react';
 
 const CHART_COLORS = ['hsl(243,75%,59%)', 'hsl(173,58%,39%)', 'hsl(197,37%,24%)', 'hsl(43,74%,66%)', 'hsl(27,87%,67%)'];
 
+function StarRating({ value }: { value: number }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className="h-3.5 w-3.5"
+          fill={i <= Math.round(value) ? '#F59E0B' : 'none'}
+          stroke={i <= Math.round(value) ? '#F59E0B' : 'currentColor'}
+        />
+      ))}
+    </span>
+  );
+}
+
+function ReviewsDialog({ open, onClose, outletOptions }: {
+  open: boolean;
+  onClose: () => void;
+  outletOptions: { outlet_id: number; outlet_name: string }[];
+}) {
+  const [outletFilter, setOutletFilter] = useState<string>('all');
+
+  const { data } = useQuery({
+    queryKey: ['reviews', outletFilter],
+    queryFn: () => fetchMockReviews(outletFilter !== 'all' ? { outlet_id: Number(outletFilter) } : undefined),
+    enabled: open,
+  });
+
+  const reviews = data?.results ?? [];
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl overflow-y-auto max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Отзывы</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={outletFilter} onValueChange={setOutletFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Все филиалы" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все филиалы</SelectItem>
+              {outletOptions.map((o) => (
+                <SelectItem key={o.outlet_id} value={String(o.outlet_id)}>{o.outlet_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Нет отзывов</p>
+          ) : (
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <Card key={r.id}>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{r.customer_name}</span>
+                          <StarRating value={r.rating} />
+                          <Badge variant="secondary" className="text-xs">{r.outlet_name}</Badge>
+                        </div>
+                        {r.deal_title && <p className="text-xs text-muted-foreground">{r.deal_title}</p>}
+                        {r.comment && <p className="text-sm mt-1">{r.comment}</p>}
+                        {r.reply && (
+                          <div className="mt-2 pl-3 border-l-2 border-primary/30">
+                            <p className="text-xs text-muted-foreground">Ответ:</p>
+                            <p className="text-sm">{r.reply}</p>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">{fmtDate(r.created_at)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AnalyticsPage() {
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+
   const sales = useQuery({ queryKey: ['analytics', 'sales'], queryFn: fetchMockSalesAnalytics });
   const traffic = useQuery({ queryKey: ['analytics', 'traffic'], queryFn: fetchMockTrafficAnalytics });
   const rating = useQuery({ queryKey: ['analytics', 'rating'], queryFn: fetchMockRatingAnalytics });
 
   const isError = sales.isError || traffic.isError || rating.isError;
   if (isError) return <ErrorState onRetry={() => { sales.refetch(); traffic.refetch(); rating.refetch(); }} />;
+
+  const outletOptions = rating.data?.by_outlet?.map((o) => ({ outlet_id: o.outlet_id, outlet_name: o.outlet_name })) ?? [];
 
   return (
     <div>
@@ -39,8 +135,12 @@ export default function AnalyticsPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard title="Выручка" value={formatMoney(sales.data.total_revenue)} />
                 <KpiCard title="Заказы" value={sales.data.total_orders} />
-                <KpiCard title="Скидки" value={formatMoney(sales.data.total_discount)} />
                 <KpiCard title="Средний чек" value={formatMoney(sales.data.avg_order)} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <KpiCard title="Выручка (скидки)" value={formatMoney(sales.data.revenue_by_discount)} />
+                <KpiCard title="Выручка (1+1)" value={formatMoney(sales.data.revenue_by_one_plus_one)} />
+                <KpiCard title="Выручка (эксклюзив)" value={formatMoney(sales.data.revenue_by_exclusive)} />
               </div>
               <Card>
                 <CardHeader><CardTitle className="text-sm font-medium">Выручка по дням</CardTitle></CardHeader>
@@ -99,10 +199,38 @@ export default function AnalyticsPage() {
         <TabsContent value="rating">
           {rating.isLoading ? <Skeleton className="h-64 rounded-xl" /> : rating.data ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <KpiCard title="Средняя оценка" value={`${rating.data.avg_rating.toFixed(1)} ★`} />
-                <KpiCard title="Всего отзывов" value={rating.data.total_reviews} />
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  <KpiCard title="Средняя оценка" value={`${rating.data.avg_rating.toFixed(1)} ★`} />
+                  <KpiCard title="Всего отзывов" value={rating.data.total_reviews} />
+                </div>
+                <Button variant="outline" onClick={() => setReviewsOpen(true)}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Просмотреть отзывы
+                </Button>
               </div>
+
+              {/* Per-outlet ratings */}
+              {rating.data.by_outlet && rating.data.by_outlet.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Рейтинг по филиалам</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {rating.data.by_outlet.map((o) => (
+                      <Card key={o.outlet_id}>
+                        <CardContent className="pt-4 pb-3">
+                          <p className="text-sm font-medium truncate mb-1">{o.outlet_name}</p>
+                          <div className="flex items-center gap-2">
+                            <StarRating value={o.avg_rating} />
+                            <span className="text-sm font-semibold">{o.avg_rating.toFixed(1)}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{o.total_reviews} отзывов</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Card>
                 <CardHeader><CardTitle className="text-sm font-medium">Распределение оценок</CardTitle></CardHeader>
                 <CardContent>
@@ -125,6 +253,12 @@ export default function AnalyticsPage() {
           ) : null}
         </TabsContent>
       </Tabs>
+
+      <ReviewsDialog
+        open={reviewsOpen}
+        onClose={() => setReviewsOpen(false)}
+        outletOptions={outletOptions}
+      />
     </div>
   );
 }

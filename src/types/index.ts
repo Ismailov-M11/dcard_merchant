@@ -161,6 +161,7 @@ export interface Order {
   status: OrderStatus;
   total_amount: string;
   discount_amount: string;
+  scanned_by?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -188,6 +189,9 @@ export interface SalesAnalytics {
   total_orders: number;
   total_discount: number;
   avg_order: number;
+  revenue_by_discount: number;
+  revenue_by_one_plus_one: number;
+  revenue_by_exclusive: number;
   points: SalesAnalyticsPoint[];
 }
 
@@ -210,6 +214,7 @@ export interface RatingAnalytics {
   avg_rating: number;
   total_reviews: number;
   distribution: { stars: number; count: number }[];
+  by_outlet?: { outlet_id: number; outlet_name: string; avg_rating: number; total_reviews: number }[];
 }
 
 export interface Review {
@@ -217,6 +222,7 @@ export interface Review {
   customer_name: string;
   rating: number;
   comment?: string | null;
+  outlet_id?: number;
   outlet_name: string;
   deal_title?: string | null;
   created_at: string;

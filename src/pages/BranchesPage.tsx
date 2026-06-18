@@ -6,29 +6,35 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil, Trash2, Loader2, MapPin, ImageUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { createOutlet, deleteOutlet, fetchOutletTypes, fetchOutlets, fetchPartners, updateOutlet, type OutletPayload } from '@/api/outlets';
-import type { Outlet, OutletType, Partner, OutletLocation } from '@/types';
+import { createOutlet, deleteOutlet, fetchOutlets, fetchPartners, updateOutlet, type OutletPayload } from '@/api/outlets';
+import type { Outlet, Partner, OutletLocation } from '@/types';
 import { PageHeader } from '@/components/PageHeader';
 import { DataTable } from '@/components/DataTable';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ErrorState } from '@/components/ErrorState';
 import { SearchInput } from '@/components/SearchInput';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import LocationPicker from '@/components/LocationPicker';
+
+const CYRILLIC_MAP: Record<string, string> = {
+  а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
+  к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',
+  ф:'f',х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+};
+
+function generateSlug(name: string): string {
+  const transliterated = name.toLowerCase().split('').map((c) => CYRILLIC_MAP[c] ?? c).join('');
+  const base = transliterated.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return (base || 'outlet') + '-' + Date.now().toString(36);
+}
 
 const branchSchema = z.object({
   name: z.string().min(1, 'Введите название'),
   city: z.string().min(1, 'Введите город'),
   address: z.string().min(1, 'Введите адрес'),
-  slug: z.string().min(1, 'Введите slug').regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис'),
-  phone: z.string().optional(),
-  partner_id: z.string().min(1, 'Выберите партнёра'),
-  outlet_type_id: z.string().optional(),
 });
 type BranchFormValues = z.infer<typeof branchSchema>;
 
@@ -40,35 +46,41 @@ export default function BranchesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Outlet | null>(null);
   const [location, setLocation] = useState<OutletLocation | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [editPartnerId, setEditPartnerId] = useState<number>(1);
 
   const { data: outlets = [], isLoading, isError, refetch } = useQuery<Outlet[]>({
     queryKey: ['outlets', search],
     queryFn: () => fetchOutlets({ search: search || undefined }),
   });
   const { data: partners = [] } = useQuery<Partner[]>({ queryKey: ['partners'], queryFn: fetchPartners });
-  const { data: types = [] } = useQuery<OutletType[]>({ queryKey: ['outletTypes'], queryFn: fetchOutletTypes });
 
   const form = useForm<BranchFormValues>({ resolver: zodResolver(branchSchema) });
 
-  const openCreate = () => { setEditOutlet(null); setLocation(null); setImageFile(null); form.reset(); setFormOpen(true); };
+  const openCreate = () => {
+    setEditOutlet(null);
+    setLocation(null);
+    setImageFile(null);
+    setEditPartnerId(partners[0]?.id ?? 1);
+    form.reset();
+    setFormOpen(true);
+  };
+
   const openEdit = (o: Outlet) => {
     setEditOutlet(o);
     setLocation(o.location ?? null);
     setImageFile(null);
-    form.reset({
-      name: o.name, city: o.city, address: o.address, slug: o.slug,
-      phone: o.phone ?? '',
-      partner_id: String(o.partner.id),
-      outlet_type_id: o.outlet_type ? String(o.outlet_type.id) : '',
-    });
+    setEditPartnerId(o.partner.id);
+    form.reset({ name: o.name, city: o.city, address: o.address });
     setFormOpen(true);
   };
 
   const buildPayload = (v: BranchFormValues): OutletPayload => ({
-    name: v.name, city: v.city, address: v.address, slug: v.slug,
-    phone: v.phone,
-    partner_id: Number(v.partner_id),
-    outlet_type_id: v.outlet_type_id ? Number(v.outlet_type_id) : null,
+    name: v.name,
+    city: v.city,
+    address: v.address,
+    slug: editOutlet?.slug ?? generateSlug(v.name),
+    partner_id: editPartnerId || partners[0]?.id || 1,
+    outlet_type_id: null,
     location: location ?? undefined,
   });
 
@@ -94,14 +106,6 @@ export default function BranchesPage() {
     { accessorKey: 'name', header: 'Название' },
     { accessorKey: 'city', header: 'Город' },
     { accessorKey: 'address', header: 'Адрес' },
-    { accessorKey: 'partner', header: 'Партнёр', cell: ({ getValue }) => (getValue() as Partner).name },
-    {
-      accessorKey: 'outlet_type', header: 'Тип',
-      cell: ({ getValue }) => {
-        const t = getValue() as OutletType | null;
-        return t ? <Badge variant="secondary">{t.name}</Badge> : '—';
-      },
-    },
     {
       accessorKey: 'location', header: '',
       cell: ({ getValue }) => getValue() ? <MapPin className="h-4 w-4 text-primary" /> : null,
@@ -132,40 +136,16 @@ export default function BranchesPage() {
           <DialogHeader><DialogTitle>{editOutlet ? 'Редактировать филиал' : 'Новый филиал'}</DialogTitle></DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit((v) => editOutlet ? updateMutation.mutate(v) : createMutation.mutate(v))} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Название</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="slug" render={({ field }) => (
-                  <FormItem><FormLabel>Slug</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Название</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="city" render={({ field }) => (
                   <FormItem><FormLabel>Город</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem><FormLabel>Телефон</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
               </div>
               <FormField control={form.control} name="address" render={({ field }) => (
                 <FormItem><FormLabel>Адрес</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="partner_id" render={({ field }) => (
-                <FormItem><FormLabel>Партнёр</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Выберите партнёра" /></SelectTrigger></FormControl>
-                    <SelectContent>{partners.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="outlet_type_id" render={({ field }) => (
-                <FormItem><FormLabel>Тип</FormLabel>
-                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Тип (необязательно)" /></SelectTrigger></FormControl>
-                    <SelectContent>{types.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FormMessage /></FormItem>
               )} />
               <div>
                 <p className="text-sm font-medium mb-2">Фото</p>
