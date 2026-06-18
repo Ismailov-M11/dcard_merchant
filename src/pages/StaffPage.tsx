@@ -122,17 +122,17 @@ export default function StaffPage() {
       <PageHeader
         title="Сотрудники"
         description="Управляйте доступом сотрудников к панели"
-        actions={<Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Добавить</Button>}
       />
-      <div className="flex gap-3 mb-4">
-        <SearchInput value={search} onChange={setSearch} className="w-64" placeholder="Поиск по телефону / имени" />
+      <div className="flex gap-3 mb-4 items-center">
+        <SearchInput value={search} onChange={setSearch} className="flex-1" placeholder="Поиск по телефону / имени" />
         <Select value={outletFilter} onValueChange={setOutletFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Все филиалы" /></SelectTrigger>
+          <SelectTrigger className="w-44 shrink-0"><SelectValue placeholder="Все филиалы" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Все филиалы</SelectItem>
             {outletOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button onClick={() => setCreateOpen(true)} className="shrink-0"><Plus className="h-4 w-4 mr-1" />Добавить</Button>
       </div>
       <DataTable columns={columns} data={staff} isLoading={isLoading} />
 

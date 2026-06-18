@@ -125,9 +125,10 @@ export default function BranchesPage() {
 
   return (
     <div>
-      <PageHeader title="Филиалы" description="Управляйте вашими точками продаж" actions={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" />Добавить</Button>} />
-      <div className="mb-4">
-        <SearchInput value={search} onChange={setSearch} className="w-64" />
+      <PageHeader title="Филиалы" description="Управляйте вашими точками продаж" />
+      <div className="flex gap-3 mb-4 items-center">
+        <SearchInput value={search} onChange={setSearch} className="flex-1" />
+        <Button onClick={openCreate} className="shrink-0"><Plus className="h-4 w-4 mr-1" />Добавить</Button>
       </div>
       <DataTable columns={columns} data={outlets} isLoading={isLoading} />
 
