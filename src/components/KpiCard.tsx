@@ -6,10 +6,11 @@ interface KpiCardProps {
   value: ReactNode;
   delta?: number;
   icon?: ReactNode;
+  action?: ReactNode;
   className?: string;
 }
 
-export function KpiCard({ title, value, delta, icon, className }: KpiCardProps) {
+export function KpiCard({ title, value, delta, icon, action, className }: KpiCardProps) {
   return (
     <div
       className={cn('ios-card p-5', className)}
@@ -34,11 +35,14 @@ export function KpiCard({ title, value, delta, icon, className }: KpiCardProps) 
         )}
       </div>
 
-      <div
-        className="text-2xl font-bold tnum leading-tight"
-        style={{ color: 'var(--ios-text-primary)' }}
-      >
-        {value}
+      <div className="flex items-end justify-between gap-2">
+        <div
+          className="text-2xl font-bold tnum leading-tight"
+          style={{ color: 'var(--ios-text-primary)' }}
+        >
+          {value}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
 
       {delta !== undefined && (

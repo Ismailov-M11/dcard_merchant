@@ -132,12 +132,10 @@ export default function AnalyticsPage() {
         <TabsContent value="sales">
           {sales.isLoading ? <Skeleton className="h-64 rounded-xl" /> : sales.data ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <KpiCard title="Выручка" value={formatMoney(sales.data.total_revenue)} />
-                <KpiCard title="Заказы" value={sales.data.total_orders} />
+                <KpiCard title="Заказы" value={String(sales.data.total_orders)} />
                 <KpiCard title="Средний чек" value={formatMoney(sales.data.avg_order)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <KpiCard title="Выручка (скидки)" value={formatMoney(sales.data.revenue_by_discount)} />
                 <KpiCard title="Выручка (1+1)" value={formatMoney(sales.data.revenue_by_one_plus_one)} />
                 <KpiCard title="Выручка (эксклюзив)" value={formatMoney(sales.data.revenue_by_exclusive)} />
@@ -199,15 +197,22 @@ export default function AnalyticsPage() {
         <TabsContent value="rating">
           {rating.isLoading ? <Skeleton className="h-64 rounded-xl" /> : rating.data ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="grid grid-cols-2 gap-4 flex-1">
-                  <KpiCard title="Средняя оценка" value={`${rating.data.avg_rating.toFixed(1)} ★`} />
-                  <KpiCard title="Всего отзывов" value={rating.data.total_reviews} />
-                </div>
-                <Button variant="outline" onClick={() => setReviewsOpen(true)}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Просмотреть отзывы
-                </Button>
+              <div className="grid grid-cols-2 gap-4">
+                <KpiCard title="Средняя оценка" value={`${rating.data.avg_rating.toFixed(1)} ★`} />
+                <KpiCard
+                  title="Всего отзывов"
+                  value={String(rating.data.total_reviews)}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setReviewsOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#007AFF] hover:opacity-80 transition-opacity whitespace-nowrap"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Отзывы
+                    </button>
+                  }
+                />
               </div>
 
               {/* Per-outlet ratings */}
