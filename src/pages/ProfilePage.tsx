@@ -443,27 +443,32 @@ export default function ProfilePage() {
           className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md"
           onClick={() => setLogoDialogOpen(false)}
         >
-          <button type="button" className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors" onClick={() => setLogoDialogOpen(false)}>
-            <X className="h-5 w-5" />
+          <button type="button" className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors" onClick={() => setLogoDialogOpen(false)}>
+            <X className="h-6 w-6" />
           </button>
-          <div className="max-w-[92vw] max-h-[88vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          {/* 80vmin = square that fills 80% of the shorter viewport side */}
+          <div
+            className="flex items-center justify-center"
+            style={{ width: '80vmin', height: '80vmin' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {currentLogoUrl ? (
-              <img src={currentLogoUrl} alt="Логотип" className="max-w-[92vw] max-h-[88vh] object-contain rounded-2xl shadow-2xl" />
+              <img src={currentLogoUrl} alt="Логотип" className="w-full h-full object-contain rounded-3xl shadow-2xl" />
             ) : (
-              <div className="h-40 w-40 flex items-center justify-center rounded-2xl bg-white/10">
-                <Building2 className="h-16 w-16 text-white/40" />
+              <div className="w-full h-full flex items-center justify-center rounded-3xl bg-white/10">
+                <Building2 className="h-24 w-24 text-white/40" />
               </div>
             )}
           </div>
-          <div className="flex gap-3 mt-6" onClick={(e) => e.stopPropagation()}>
-            <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-[#007AFF] hover:opacity-90 transition-opacity select-none shadow-lg">
-              <ImageUp className="h-4 w-4" />Загрузить
+          <div className="flex gap-4 mt-8" onClick={(e) => e.stopPropagation()}>
+            <label className="cursor-pointer inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white bg-[#007AFF] hover:opacity-90 transition-opacity select-none shadow-lg">
+              <ImageUp className="h-5 w-5" />Загрузить
               <input type="file" accept="image/*" className="sr-only" onChange={(e) => { setLogoFile(e.target.files?.[0] ?? null); setDeleteLogo(false); setLogoDialogOpen(false); }} />
             </label>
             {currentLogoUrl && (
-              <button type="button" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
+              <button type="button" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
                 onClick={() => { setDeleteLogo(true); setLogoFile(null); setLogoDialogOpen(false); }}>
-                <Trash2 className="h-4 w-4" />Удалить
+                <Trash2 className="h-5 w-5" />Удалить
               </button>
             )}
           </div>
