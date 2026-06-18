@@ -209,8 +209,8 @@ export default function OrdersPage() {
       <PageHeader title="Заказы" description="Все заказы по вашим акциям" />
 
       <div className="flex gap-3 mb-4 items-center">
-        <SearchInput value={search} onChange={setSearch} className="w-64" placeholder="Поиск по всем полям" />
-        <Button variant="outline" onClick={openFilters} className="relative">
+        <SearchInput value={search} onChange={setSearch} className="flex-1" placeholder="Поиск по всем полям" />
+        <Button variant="outline" onClick={openFilters} className="relative shrink-0">
           <SlidersHorizontal className="h-4 w-4 mr-2" />
           Фильтры
           {activeFilterCount > 0 && (
