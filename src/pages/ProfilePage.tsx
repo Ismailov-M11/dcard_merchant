@@ -485,58 +485,31 @@ export default function ProfilePage() {
           </button>
 
           <div
-            className="flex flex-col sm:flex-row gap-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            className="flex flex-col sm:flex-row gap-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Left: banner image */}
-            <div className="flex flex-col items-center gap-3 sm:w-1/2">
-              <label
-                className="cursor-pointer block w-full rounded-2xl overflow-hidden shadow-2xl"
-                style={{ aspectRatio: '16/9', background: bannerColor }}
-              >
-                {bannerPreviewUrl ? (
-                  <img src={bannerPreviewUrl} alt="Баннер" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/60">
-                    <ImageUp className="h-10 w-10" />
-                    <span className="text-sm">Нажмите для загрузки</span>
-                  </div>
-                )}
-                <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleBannerImageSelect(f); }} />
-              </label>
-              {bannerPreviewUrl && (
-                <button
-                  type="button"
-                  className="text-xs text-white/60 hover:text-white transition-colors"
-                  onClick={() => { if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current); setBannerImageFile(null); setBannerPreviewUrl(null); setSuggestedColors([]); }}
-                >
-                  Удалить изображение
-                </button>
-              )}
-            </div>
-
-            {/* Right: settings */}
-            <div className="flex flex-col gap-4 sm:w-1/2">
-              <h2 className="text-lg font-semibold text-white">
+            {/* Left: title + settings + buttons */}
+            <div className="flex flex-col gap-4 sm:w-[45%]">
+              <h2 className="text-2xl font-bold text-white">
                 {editingBanner ? 'Редактировать баннер' : 'Добавить баннер'}
               </h2>
 
               {/* Color picker */}
               <div>
-                <Label className="text-sm font-medium text-white/80 mb-2 block">Цвет фона</Label>
-                <div className="flex items-center gap-2">
+                <Label className="text-base font-medium text-white/80 mb-2 block">Цвет фона</Label>
+                <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={normalizeHex(bannerColor) ?? '#cccccc'}
                     onChange={(e) => setBannerColor(e.target.value)}
-                    className="h-10 w-12 cursor-pointer rounded-lg border border-white/20 p-0.5 bg-transparent"
+                    className="h-12 w-14 cursor-pointer rounded-xl border border-white/20 p-0.5 bg-transparent"
                   />
                   <input
                     type="text"
                     value={bannerColor}
                     onChange={(e) => setBannerColor(e.target.value)}
                     placeholder="#aabbcc"
-                    className="flex-1 h-10 rounded-lg bg-white/10 border border-white/20 px-3 text-sm text-white font-mono placeholder-white/30 focus:outline-none focus:border-white/50"
+                    className="flex-1 h-12 rounded-xl bg-white/10 border border-white/20 px-4 text-base text-white font-mono placeholder-white/30 focus:outline-none focus:border-white/50"
                   />
                 </div>
               </div>
@@ -544,8 +517,8 @@ export default function ProfilePage() {
               {/* Suggested colors */}
               {suggestedColors.length > 0 && (
                 <div>
-                  <Label className="text-sm font-medium text-white/80 mb-2 block">Рекомендуемые цвета</Label>
-                  <div className="flex flex-wrap gap-2">
+                  <Label className="text-base font-medium text-white/80 mb-2 block">Рекомендуемые цвета</Label>
+                  <div className="flex flex-wrap gap-3">
                     {suggestedColors.map((c) => (
                       <button
                         key={c}
@@ -554,7 +527,7 @@ export default function ProfilePage() {
                         onClick={() => setBannerColor(c)}
                         className="rounded-full transition-transform hover:scale-110"
                         style={{
-                          width: 36, height: 36,
+                          width: 44, height: 44,
                           background: c,
                           border: normalizeHex(c) === normalizeHex(bannerColor) ? '3px solid #ffffff' : '2px solid rgba(255,255,255,0.2)',
                           boxShadow: '0 1px 6px rgba(0,0,0,0.4)',
@@ -568,16 +541,16 @@ export default function ProfilePage() {
               {/* Active toggle */}
               <div className="flex items-center gap-3">
                 <Switch checked={bannerActive} onCheckedChange={setBannerActive} id="banner-active" />
-                <Label htmlFor="banner-active" className="text-white/90">Активный баннер</Label>
+                <Label htmlFor="banner-active" className="text-base text-white/90">Активный баннер</Label>
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="flex flex-col gap-3 mt-auto pt-2">
                 <button
                   type="button"
                   disabled={bannerMutation.isPending || (!bannerImageFile && !editingBanner?.image)}
                   onClick={() => bannerMutation.mutate({ background_color: bannerColor, is_active: bannerActive, image: bannerImageFile })}
-                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-[#007AFF] hover:opacity-90 disabled:opacity-40 transition-opacity"
+                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl text-base font-semibold text-white bg-[#007AFF] hover:opacity-90 disabled:opacity-40 transition-opacity"
                 >
                   {bannerMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Сохранить
@@ -587,18 +560,67 @@ export default function ProfilePage() {
                     type="button"
                     disabled={deleteBannerMutation.isPending}
                     onClick={() => { deleteBannerMutation.mutate(); closeBannerForm(); }}
-                    className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 disabled:opacity-40 transition-colors"
+                    className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl text-base font-semibold text-white bg-red-500/80 hover:bg-red-500 disabled:opacity-40 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />Удалить баннер
+                    <Trash2 className="h-5 w-5" />Удалить баннер
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={closeBannerForm}
-                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl text-base font-medium text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
                 >
                   Отмена
                 </button>
+              </div>
+            </div>
+
+            {/* Right: large preview + small upload thumbnail below */}
+            <div className="flex flex-col gap-3 sm:w-[55%]">
+              {/* Preview */}
+              <div
+                className="w-full rounded-2xl overflow-hidden shadow-2xl"
+                style={{ aspectRatio: '16/9', background: bannerColor }}
+              >
+                {bannerPreviewUrl ? (
+                  <img src={bannerPreviewUrl} alt="Предпросмотр" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/30 text-sm">
+                    Предпросмотр
+                  </div>
+                )}
+              </div>
+
+              {/* Upload control with thumbnail */}
+              <div className="flex items-center gap-4">
+                <div
+                  className="h-16 w-24 rounded-xl overflow-hidden shrink-0 border-2 border-white/20"
+                  style={{ background: bannerColor }}
+                >
+                  {bannerPreviewUrl ? (
+                    <img src={bannerPreviewUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/30">
+                      <ImageUp className="h-6 w-6" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-white/15 hover:bg-white/25 border border-white/20 transition-colors select-none">
+                    <ImageUp className="h-4 w-4" />
+                    {bannerPreviewUrl ? 'Сменить фото' : 'Загрузить фото'}
+                    <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleBannerImageSelect(f); }} />
+                  </label>
+                  {bannerPreviewUrl && (
+                    <button
+                      type="button"
+                      className="text-xs text-white/50 hover:text-white/80 transition-colors text-left"
+                      onClick={() => { if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current); setBannerImageFile(null); setBannerPreviewUrl(null); setSuggestedColors([]); }}
+                    >
+                      Удалить изображение
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
