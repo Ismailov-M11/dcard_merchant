@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState, useTransition, type CSSProperties } 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { NAV_ITEMS } from './nav';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 function getNavIndex(pathname: string) {
   if (pathname === '/') return 0;
@@ -78,7 +77,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 py-3">
+      <div className="flex-1 py-3 overflow-y-auto">
         <nav className="relative px-3 space-y-0.5">
           {/* Liquid sliding indicator */}
           <div
@@ -133,7 +132,7 @@ export function Sidebar() {
             );
           })}
         </nav>
-      </ScrollArea>
+      </div>
 
       <div className="h-px bg-gradient-to-r from-transparent via-[rgba(210,158,24,0.32)] to-transparent" />
     </aside>
