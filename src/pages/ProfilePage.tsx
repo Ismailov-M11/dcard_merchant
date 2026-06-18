@@ -138,6 +138,10 @@ export default function ProfilePage() {
   const [bannerColor, setBannerColor] = useState('#cccccc');
   const [bannerActive, setBannerActive] = useState(true);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  // animation "visible" states — DOM stays mounted during close transition
+  const [logoDialogVisible, setLogoDialogVisible] = useState(false);
+  const [bannerFormVisible, setBannerFormVisible] = useState(false);
+  const [mobilePreviewVisible, setMobilePreviewVisible] = useState(false);
 
   // profile query
   const { data: profile, isLoading, isError, refetch } = useQuery<Partner>({
@@ -222,6 +226,12 @@ export default function ProfilePage() {
     onError: () => toast.error('Ошибка удаления'),
   });
 
+  const openLogoDialog = () => { setLogoDialogVisible(true); setTimeout(() => setLogoDialogOpen(true), 16); };
+  const closeLogoDialog = () => { setLogoDialogOpen(false); setTimeout(() => setLogoDialogVisible(false), 220); };
+
+  const openMobilePreview = () => { setMobilePreviewVisible(true); setTimeout(() => setMobilePreviewOpen(true), 16); };
+  const closeMobilePreview = () => { setMobilePreviewOpen(false); setTimeout(() => setMobilePreviewVisible(false), 220); };
+
   const openBannerForm = (banner?: OutletBanner) => {
     setEditingBanner(banner ?? null);
     setBannerImageFile(null);
@@ -230,16 +240,20 @@ export default function ProfilePage() {
     setSuggestedColors(colors);
     setBannerColor(normalizeHex(banner?.background_color) ?? '#cccccc');
     setBannerActive(banner?.is_active ?? true);
-    setBannerFormOpen(true);
+    setBannerFormVisible(true);
+    setTimeout(() => setBannerFormOpen(true), 16);
   };
 
   const closeBannerForm = () => {
-    if (bannerPreviewRef.current) { URL.revokeObjectURL(bannerPreviewRef.current); bannerPreviewRef.current = null; }
     setBannerFormOpen(false);
-    setEditingBanner(null);
-    setBannerImageFile(null);
-    setBannerPreviewUrl(null);
-    setSuggestedColors([]);
+    setTimeout(() => {
+      if (bannerPreviewRef.current) { URL.revokeObjectURL(bannerPreviewRef.current); bannerPreviewRef.current = null; }
+      setBannerFormVisible(false);
+      setEditingBanner(null);
+      setBannerImageFile(null);
+      setBannerPreviewUrl(null);
+      setSuggestedColors([]);
+    }, 220);
   };
 
   const handleBannerImageSelect = async (file: File) => {
@@ -268,9 +282,8 @@ export default function ProfilePage() {
   const mobileCardBg = mobileIsDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)';
   const mobileImgBg = mobileIsDark ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.8)';
   // iPhone 17 Pro Max: 430×932 screen + 12px border each side = 454×956 frame
-  const phoneScale = typeof window !== 'undefined'
-    ? Math.min(1, Math.max(0.60, (window.innerHeight * 0.96) / 956))
-    : 0.82;
+  // Scale so phone exactly fills the viewport height
+  const phoneScale = typeof window !== 'undefined' ? window.innerHeight / 956 : 0.94;
 
   if (isError) return <ErrorState onRetry={refetch} />;
 
@@ -318,7 +331,7 @@ export default function ProfilePage() {
                 <div className="relative px-5 pb-4 pt-2 min-h-[52px]">
                   <button
                     type="button"
-                    onClick={() => setLogoDialogOpen(true)}
+                    onClick={openLogoDialog}
                     className="absolute -top-9 left-5 group z-10"
                     title="Управление логотипом"
                   >
@@ -338,7 +351,7 @@ export default function ProfilePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setMobilePreviewOpen(true)}
+                      onClick={openMobilePreview}
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 transition-colors"
                     >
                       <Smartphone className="h-3.5 w-3.5" />
@@ -452,18 +465,31 @@ export default function ProfilePage() {
       ) : null}
 
       {/* ── Logo lightbox ─────────────────────────────────────────────── */}
-      {logoDialogOpen && (
+      {logoDialogVisible && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md"
-          onClick={() => setLogoDialogOpen(false)}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          style={{
+            background: logoDialogOpen ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0)',
+            backdropFilter: logoDialogOpen ? 'blur(12px)' : 'blur(0px)',
+            transition: 'background 220ms ease-out, backdrop-filter 220ms ease-out',
+          }}
+          onClick={closeLogoDialog}
         >
-          <button type="button" className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors" onClick={() => setLogoDialogOpen(false)}>
+          <button
+            type="button"
+            className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            onClick={closeLogoDialog}
+          >
             <X className="h-6 w-6" />
           </button>
-          {/* 80vmin = square that fills 80% of the shorter viewport side */}
           <div
             className="flex items-center justify-center"
-            style={{ width: '80vmin', height: '80vmin' }}
+            style={{
+              width: '80vmin', height: '80vmin',
+              transform: logoDialogOpen ? 'scale(1)' : 'scale(0.88)',
+              opacity: logoDialogOpen ? 1 : 0,
+              transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1), opacity 200ms ease-out',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {currentLogoUrl ? (
@@ -474,14 +500,22 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          <div className="flex gap-4 mt-8" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex gap-4 mt-8"
+            style={{
+              opacity: logoDialogOpen ? 1 : 0,
+              transform: logoDialogOpen ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'opacity 220ms ease-out 60ms, transform 220ms ease-out 60ms',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <label className="cursor-pointer inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white bg-[#007AFF] hover:opacity-90 transition-opacity select-none shadow-lg">
               <ImageUp className="h-5 w-5" />Загрузить
-              <input type="file" accept="image/*" className="sr-only" onChange={(e) => { setLogoFile(e.target.files?.[0] ?? null); setDeleteLogo(false); setLogoDialogOpen(false); }} />
+              <input type="file" accept="image/*" className="sr-only" onChange={(e) => { setLogoFile(e.target.files?.[0] ?? null); setDeleteLogo(false); closeLogoDialog(); }} />
             </label>
             {currentLogoUrl && (
               <button type="button" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
-                onClick={() => { setDeleteLogo(true); setLogoFile(null); setLogoDialogOpen(false); }}>
+                onClick={() => { setDeleteLogo(true); setLogoFile(null); closeLogoDialog(); }}>
                 <Trash2 className="h-5 w-5" />Удалить
               </button>
             )}
@@ -490,26 +524,34 @@ export default function ProfilePage() {
       )}
 
       {/* ── Mobile preview overlay ────────────────────────────── */}
-      {mobilePreviewOpen && (
+      {mobilePreviewVisible && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
-          onClick={() => setMobilePreviewOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            background: mobilePreviewOpen ? 'rgba(0,0,0,0.80)' : 'rgba(0,0,0,0)',
+            backdropFilter: mobilePreviewOpen ? 'blur(12px)' : 'blur(0px)',
+            transition: 'background 220ms ease-out, backdrop-filter 220ms ease-out',
+          }}
+          onClick={closeMobilePreview}
         >
           <button
             type="button"
             className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
-            onClick={() => setMobilePreviewOpen(false)}
+            onClick={closeMobilePreview}
+            style={{ opacity: mobilePreviewOpen ? 1 : 0, transition: 'opacity 200ms ease-out 80ms' }}
           >
             <X className="h-6 w-6" />
           </button>
 
-          {/* Scale wrapper */}
+          {/* Scale wrapper — phone fills full viewport height */}
           <div
             className="relative"
             style={{
-              transform: `scale(${phoneScale})`,
+              transform: `scale(${mobilePreviewOpen ? phoneScale : phoneScale * 0.92})`,
               transformOrigin: 'top center',
-              marginBottom: `${956 * (phoneScale - 1)}px`,
+              marginBottom: `${956 * ((mobilePreviewOpen ? phoneScale : phoneScale * 0.92) - 1)}px`,
+              opacity: mobilePreviewOpen ? 1 : 0,
+              transition: 'transform 280ms cubic-bezier(0.34,1.56,0.64,1), opacity 220ms ease-out, margin-bottom 280ms cubic-bezier(0.34,1.56,0.64,1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -665,9 +707,14 @@ export default function ProfilePage() {
         </div>
       )}
       {/* ── Banner management fullscreen overlay ─────────────────────── */}
-      {bannerFormOpen && (
+      {bannerFormVisible && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{
+            background: bannerFormOpen ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0)',
+            backdropFilter: bannerFormOpen ? 'blur(12px)' : 'blur(0px)',
+            transition: 'background 220ms ease-out, backdrop-filter 220ms ease-out',
+          }}
           onClick={closeBannerForm}
         >
           <button
@@ -680,6 +727,11 @@ export default function ProfilePage() {
 
           <div
             className="flex flex-col sm:flex-row gap-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+            style={{
+              transform: bannerFormOpen ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
+              opacity: bannerFormOpen ? 1 : 0,
+              transition: 'transform 250ms cubic-bezier(0.34,1.56,0.64,1), opacity 220ms ease-out',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left: title + settings + buttons */}
