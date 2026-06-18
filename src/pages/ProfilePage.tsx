@@ -19,7 +19,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -471,54 +470,73 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── Banner management dialog ───────────────────────────────────── */}
-      <Dialog open={bannerFormOpen} onOpenChange={(o) => { if (!o) closeBannerForm(); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingBanner ? 'Редактировать баннер' : 'Добавить баннер'}</DialogTitle>
-          </DialogHeader>
+      {/* ── Banner management fullscreen overlay ─────────────────────── */}
+      {bannerFormOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+          onClick={closeBannerForm}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            onClick={closeBannerForm}
+          >
+            <X className="h-5 w-5" />
+          </button>
 
-          <div className="pt-2">
-            {/* Left: controls */}
-            <div className="space-y-4">
-              {/* Image upload */}
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Изображение баннера</Label>
-                <label className="cursor-pointer block w-full rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden"
-                  style={{ aspectRatio: '16/9', background: bannerColor }}>
-                  {bannerPreviewUrl ? (
-                    <img src={bannerPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ color: previewTextColor }}>
-                      <ImageUp className="h-8 w-8 opacity-60" />
-                      <span className="text-sm opacity-70">PNG, JPG, SVG</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleBannerImageSelect(f); }} />
-                </label>
-                {bannerPreviewUrl && (
-                  <button type="button" className="mt-2 text-xs text-destructive hover:underline"
-                    onClick={() => { if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current); setBannerImageFile(null); setBannerPreviewUrl(null); setSuggestedColors([]); }}>
-                    Удалить изображение
-                  </button>
+          <div
+            className="flex flex-col sm:flex-row gap-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left: banner image */}
+            <div className="flex flex-col items-center gap-3 sm:w-1/2">
+              <label
+                className="cursor-pointer block w-full rounded-2xl overflow-hidden shadow-2xl"
+                style={{ aspectRatio: '16/9', background: bannerColor }}
+              >
+                {bannerPreviewUrl ? (
+                  <img src={bannerPreviewUrl} alt="Баннер" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/60">
+                    <ImageUp className="h-10 w-10" />
+                    <span className="text-sm">Нажмите для загрузки</span>
+                  </div>
                 )}
-              </div>
+                <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleBannerImageSelect(f); }} />
+              </label>
+              {bannerPreviewUrl && (
+                <button
+                  type="button"
+                  className="text-xs text-white/60 hover:text-white transition-colors"
+                  onClick={() => { if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current); setBannerImageFile(null); setBannerPreviewUrl(null); setSuggestedColors([]); }}
+                >
+                  Удалить изображение
+                </button>
+              )}
+            </div>
 
-              {/* Color input + native picker */}
+            {/* Right: settings */}
+            <div className="flex flex-col gap-4 sm:w-1/2">
+              <h2 className="text-lg font-semibold text-white">
+                {editingBanner ? 'Редактировать баннер' : 'Добавить баннер'}
+              </h2>
+
+              {/* Color picker */}
               <div>
-                <Label className="text-sm font-medium mb-2 block">Цвет фона</Label>
+                <Label className="text-sm font-medium text-white/80 mb-2 block">Цвет фона</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={normalizeHex(bannerColor) ?? '#cccccc'}
                     onChange={(e) => setBannerColor(e.target.value)}
-                    className="h-10 w-12 cursor-pointer rounded-lg border border-border p-0.5 bg-transparent"
+                    className="h-10 w-12 cursor-pointer rounded-lg border border-white/20 p-0.5 bg-transparent"
                   />
-                  <Input
+                  <input
+                    type="text"
                     value={bannerColor}
                     onChange={(e) => setBannerColor(e.target.value)}
                     placeholder="#aabbcc"
-                    className="font-mono"
+                    className="flex-1 h-10 rounded-lg bg-white/10 border border-white/20 px-3 text-sm text-white font-mono placeholder-white/30 focus:outline-none focus:border-white/50"
                   />
                 </div>
               </div>
@@ -526,7 +544,7 @@ export default function ProfilePage() {
               {/* Suggested colors */}
               {suggestedColors.length > 0 && (
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Рекомендуемые цвета</Label>
+                  <Label className="text-sm font-medium text-white/80 mb-2 block">Рекомендуемые цвета</Label>
                   <div className="flex flex-wrap gap-2">
                     {suggestedColors.map((c) => (
                       <button
@@ -538,8 +556,8 @@ export default function ProfilePage() {
                         style={{
                           width: 36, height: 36,
                           background: c,
-                          border: normalizeHex(c) === normalizeHex(bannerColor) ? '3px solid #111827' : '2px solid rgba(0,0,0,0.1)',
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                          border: normalizeHex(c) === normalizeHex(bannerColor) ? '3px solid #ffffff' : '2px solid rgba(255,255,255,0.2)',
+                          boxShadow: '0 1px 6px rgba(0,0,0,0.4)',
                         }}
                       />
                     ))}
@@ -550,33 +568,42 @@ export default function ProfilePage() {
               {/* Active toggle */}
               <div className="flex items-center gap-3">
                 <Switch checked={bannerActive} onCheckedChange={setBannerActive} id="banner-active" />
-                <Label htmlFor="banner-active">Активный баннер</Label>
+                <Label htmlFor="banner-active" className="text-white/90">Активный баннер</Label>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  type="button"
+                  disabled={bannerMutation.isPending || (!bannerImageFile && !editingBanner?.image)}
+                  onClick={() => bannerMutation.mutate({ background_color: bannerColor, is_active: bannerActive, image: bannerImageFile })}
+                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-[#007AFF] hover:opacity-90 disabled:opacity-40 transition-opacity"
+                >
+                  {bannerMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Сохранить
+                </button>
+                {editingBanner && (
+                  <button
+                    type="button"
+                    disabled={deleteBannerMutation.isPending}
+                    onClick={() => { deleteBannerMutation.mutate(); closeBannerForm(); }}
+                    className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500/80 hover:bg-red-500 disabled:opacity-40 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />Удалить баннер
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={closeBannerForm}
+                  className="inline-flex items-center justify-center gap-2 w-full px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
+                >
+                  Отмена
+                </button>
               </div>
             </div>
-
           </div>
-
-          {/* Actions */}
-          <div className="flex justify-between pt-4 border-t">
-            {editingBanner ? (
-              <Button type="button" variant="destructive" size="sm" onClick={() => { deleteBannerMutation.mutate(); closeBannerForm(); }} disabled={deleteBannerMutation.isPending}>
-                <Trash2 className="h-4 w-4 mr-1" />Удалить баннер
-              </Button>
-            ) : <div />}
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={closeBannerForm}>Отмена</Button>
-              <Button
-                type="button"
-                disabled={bannerMutation.isPending || (!bannerImageFile && !editingBanner?.image)}
-                onClick={() => bannerMutation.mutate({ background_color: bannerColor, is_active: bannerActive, image: bannerImageFile })}
-              >
-                {bannerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Сохранить
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }
