@@ -4,7 +4,7 @@ import { fetchCurrentUser, loginWithPassword } from '../../api/auth';
 
 const ACCESS_TOKEN_KEY = 'merchant_access_token';
 const REFRESH_TOKEN_KEY = 'merchant_refresh_token';
-export const PARTNER_ROLES = ['partner_owner', 'partner_admin'] as const;
+export const PARTNER_ROLES = ['partner_owner', 'partner_admin', 'merchant_staff'] as const;
 type PartnerRole = (typeof PARTNER_ROLES)[number];
 
 interface AuthContextValue {
