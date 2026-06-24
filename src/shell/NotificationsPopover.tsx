@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { fetchMockNotifications, markAllMockNotificationsRead } from '@/api/mock';
+import { fetchNotifications, markAllNotificationsRead } from '@/api/notifications';
 import { fmtDateTime } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 
@@ -12,11 +12,11 @@ export function NotificationsPopover() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ['notifications'],
-    queryFn: fetchMockNotifications,
+    queryFn: fetchNotifications,
   });
 
   const mutation = useMutation({
-    mutationFn: markAllMockNotificationsRead,
+    mutationFn: markAllNotificationsRead,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
