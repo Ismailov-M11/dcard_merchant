@@ -1,191 +1,149 @@
-# Missing Backend APIs — Merchant Panel
+# MISSING_APIS — dcardback
 
-This document lists API endpoints required by the merchant panel redesign that **do not exist** in the current backend (`dcardback`). All endpoints should be accessible only to authenticated merchant users (OWNER / ADMIN role).
+Specification of backend endpoints required by `dcardmerchant-main` that are **not implemented** in the current backend.
+
+Backend: Django REST Framework · `EnvelopeJSONRenderer` wrapper (`{ success, data, error, meta }`) · JWT auth via `Authorization: Bearer <access_token>` · `StandardResultsSetPagination` (`{ count, next, previous, results }`) · Permission class: `MerchantSchema` (role `MERCHANT_OWNER` | `PARTNER_OWNER` | `ADMIN`).
 
 ---
 
-## 1. Dashboard Summary
+## 1. `GET /api/merchant/dashboard/`
 
-**Endpoint:** `GET /api/merchant/dashboard/`
+### Permission
+`MerchantSchema` — `MERCHANT_OWNER` or `PARTNER_OWNER` or `ADMIN`
 
-**Auth:** Merchant (OWNER or ADMIN)
+### Query params
+None. Data scope is derived from `request.user` → all `Partner` IDs via `get_user_partner_ids(request.user)`.
 
-**Description:** Returns aggregated KPI data for the current calendar month and the previous month, scoped to all outlets belonging to the merchant's partner.
+### Logic
+```python
+partner_ids = get_user_partner_ids(request.user)
+outlets     = Outlet.objects.filter(partner_id__in=partner_ids, is_active=True)
+outlet_ids  = list(outlets.values_list('id', flat=True))
 
-**Response:**
-```json
+now          = timezone.now()
+month_start  = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+prev_start   = (month_start - timedelta(days=1)).replace(day=1)
+
+logs_month   = VerificationLog.objects.filter(outlet_id__in=outlet_ids, status='valid', timestamp__gte=month_start)
+logs_prev    = VerificationLog.objects.filter(outlet_id__in=outlet_ids, status='valid', timestamp__gte=prev_start, timestamp__lt=month_start)
+active_deals = OutletSpecialOffer.objects.filter(partner_id__in=partner_ids, status='active').count()
+```
+
+Rating source: if a `Rating` or `Review` model exists linked to `VerificationLog` or `Outlet`, aggregate `avg(rating)` over current month. If not implemented — return `null`.
+
+### Response body (`data` field)
+```jsonc
 {
-  "revenue_month": 12450000,
-  "revenue_prev_month": 10200000,
-  "orders_month": 87,
-  "orders_prev_month": 71,
-  "active_deals": 4,
-  "total_branches": 3,
-  "avg_rating": 4.3,
-  "new_reviews": 12
+  "revenue_month":      0,          // int | null — sum of transaction amounts in UZS; null if not tracked
+  "revenue_prev_month": 0,          // int | null
+  "orders_month":       87,         // int — COUNT of VerificationLog(status='valid', timestamp >= month_start)
+  "orders_prev_month":  71,         // int — COUNT of VerificationLog(status='valid', prev month)
+  "active_deals":       4,          // int — COUNT of OutletSpecialOffer(status='active', partner__in=partner_ids)
+  "total_branches":     3,          // int — COUNT of Outlet(partner__in=partner_ids, is_active=True)
+  "avg_rating":         4.3,        // float | null — AVG rating across all outlets; null if not tracked
+  "new_reviews":        12          // int | null — COUNT of new reviews this month; null if not tracked
 }
 ```
 
-**Field descriptions:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `revenue_month` | int | Total transaction value (sum) for current month across all outlets (UZS) |
-| `revenue_prev_month` | int | Same metric for the previous calendar month |
-| `orders_month` | int | Number of successful verifications in current month |
-| `orders_prev_month` | int | Same metric for the previous calendar month |
-| `active_deals` | int | Count of `OutletSpecialOffer` with status=`active` for the partner |
-| `total_branches` | int | Count of `Outlet` records for the partner |
-| `avg_rating` | float | Average rating across all partner outlets (from `VerificationLog.rating` or a rating model) |
-| `new_reviews` | int | Number of new ratings/reviews in current month |
-
-**Note:** If revenue tracking is not implemented in the backend, at minimum `orders_month`, `orders_prev_month`, `avg_rating`, and `new_reviews` are needed.
+### HTTP status codes
+| Code | Condition |
+|------|-----------|
+| `200` | OK |
+| `401` | Missing / invalid JWT |
+| `403` | User has no partner association |
 
 ---
 
-## 2. Sales Analytics (Time-Series)
+## 2. `GET /api/merchant/analytics/sales/`
 
-**Endpoint:** `GET /api/merchant/analytics/sales/`
+### Permission
+`MerchantSchema` — OWNER or ADMIN
 
-**Query params:** `?from=YYYY-MM-DD&to=YYYY-MM-DD&outlet_id=<int>` (outlet_id optional, defaults to all partner outlets)
+### Query params
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `from` | `date` YYYY-MM-DD | No | Start of period (default: 7 days ago) |
+| `to`   | `date` YYYY-MM-DD | No | End of period (default: today) |
+| `outlet_id` | `int` | No | Filter to single outlet; must belong to caller's partner |
 
-**Auth:** Merchant (OWNER or ADMIN)
+### Logic
+```python
+partner_ids = get_user_partner_ids(request.user)
+outlets = Outlet.objects.filter(partner_id__in=partner_ids)
+if outlet_id:
+    outlets = outlets.filter(pk=outlet_id)  # validate ownership
 
-**Description:** Returns sales / verification statistics grouped by day for the given date range.
+logs = VerificationLog.objects.filter(
+    outlet__in=outlets,
+    status='valid',
+    timestamp__date__gte=date_from,
+    timestamp__date__lte=date_to,
+).select_related('special_offer')
 
-**Response:**
-```json
+# Group by day:
+points = logs.annotate(date=TruncDate('timestamp')).values('date').annotate(
+    orders=Count('id'),
+    discount_amount=Sum(F('discount_percent') * F('price') / 100),  # if price exists
+).order_by('date')
+
+# Group by offer_type for revenue split:
+by_type = logs.values('special_offer__offer_type').annotate(orders=Count('id'))
+```
+
+### Response body (`data` field)
+```jsonc
 {
-  "total_revenue": 12450000,
-  "total_orders": 87,
-  "total_discount": 2340000,
-  "avg_order": 143103,
-  "revenue_by_discount": 5200000,
-  "revenue_by_one_plus_one": 4150000,
-  "revenue_by_exclusive": 3100000,
+  "total_revenue":           12450000,   // int | null — sum of discounted transaction amounts in UZS
+  "total_orders":            87,         // int — COUNT(valid verifications in period)
+  "total_discount":          2340000,    // int | null
+  "avg_order":               143103,     // int | null — total_revenue / total_orders
+  "revenue_by_discount":     5200000,    // int | null — revenue from OfferType.EXCLUSIVE (discount %)
+  "revenue_by_one_plus_one": 4150000,    // int | null — revenue from OfferType.ONE_PLUS_ONE
+  "revenue_by_exclusive":    3100000,    // int | null — revenue from OfferType.EXCLUSIVE
   "points": [
-    { "date": "2026-06-07", "revenue": 1800000, "orders": 12, "discount_amount": 360000 },
-    { "date": "2026-06-08", "revenue": 2100000, "orders": 15, "discount_amount": 420000 }
-  ]
-}
-```
-
-**Field descriptions:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `total_revenue` | int | Sum of all transaction values in period (UZS) |
-| `total_orders` | int | Count of successful verifications in period |
-| `total_discount` | int | Total discount amount given in period (UZS) |
-| `avg_order` | int | Average transaction value (`total_revenue / total_orders`) |
-| `revenue_by_discount` | int | Revenue from `OfferType.DISCOUNT` deals |
-| `revenue_by_one_plus_one` | int | Revenue from `OfferType.ONE_PLUS_ONE` deals |
-| `revenue_by_exclusive` | int | Revenue from `OfferType.EXCLUSIVE` deals |
-| `points[].date` | string | ISO date `YYYY-MM-DD` |
-| `points[].revenue` | int | Revenue for that day |
-| `points[].orders` | int | Verification count for that day |
-| `points[].discount_amount` | int | Total discount given that day |
-
----
-
-## 3. Traffic Analytics (Time-Series)
-
-**Endpoint:** `GET /api/merchant/analytics/traffic/`
-
-**Query params:** `?from=YYYY-MM-DD&to=YYYY-MM-DD&outlet_id=<int>`
-
-**Auth:** Merchant (OWNER or ADMIN)
-
-**Description:** Returns views, clicks, and conversion metrics per day. These metrics require tracking user interactions with the merchant's profile/offers in the customer mobile app.
-
-**Response:**
-```json
-{
-  "total_views": 5340,
-  "total_clicks": 1240,
-  "total_conversions": 87,
-  "conversion_rate": 7.0,
-  "points": [
-    { "date": "2026-06-07", "views": 780, "clicks": 180, "conversions": 12 },
-    { "date": "2026-06-08", "views": 920, "clicks": 210, "conversions": 15 }
-  ]
-}
-```
-
-**Field descriptions:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `total_views` | int | Total number of times the merchant profile/offer page was opened |
-| `total_clicks` | int | Total number of offer "use" / "apply" button clicks |
-| `total_conversions` | int | Total successful verifications (= `orders_month`) |
-| `conversion_rate` | float | `(total_conversions / total_views) * 100` |
-| `points[].views` | int | Page views for that day |
-| `points[].clicks` | int | Offer clicks for that day |
-| `points[].conversions` | int | Successful verifications for that day |
-
-**Note:** This requires event tracking in the customer app (analytics events for page views and offer clicks). If analytics events are not tracked, at minimum `conversions` can be derived from `VerificationLog`.
-
----
-
-## 4. Rating Analytics
-
-**Endpoint:** `GET /api/merchant/analytics/rating/`
-
-**Query params:** `?outlet_id=<int>` (optional)
-
-**Auth:** Merchant (OWNER or ADMIN)
-
-**Description:** Returns rating distribution and per-outlet breakdown for all partner outlets.
-
-**Response:**
-```json
-{
-  "avg_rating": 4.3,
-  "total_reviews": 126,
-  "distribution": [
-    { "stars": 5, "count": 68 },
-    { "stars": 4, "count": 32 },
-    { "stars": 3, "count": 15 },
-    { "stars": 2, "count": 7 },
-    { "stars": 1, "count": 4 }
-  ],
-  "by_outlet": [
-    { "outlet_id": 1, "outlet_name": "Центральный филиал", "avg_rating": 4.6, "total_reviews": 74 },
-    { "outlet_id": 2, "outlet_name": "Филиал Чиланзар", "avg_rating": 4.1, "total_reviews": 31 }
-  ]
-}
-```
-
-**Data source:** `VerificationLog` has a `rating` field (if ratings are stored there), or a separate `Review` / `Rating` model linked to outlet verifications.
-
----
-
-## 5. Merchant Reviews List
-
-**Endpoint:** `GET /api/merchant/reviews/`
-
-**Query params:** `?outlet_id=<int>&page=<int>&page_size=<int>`
-
-**Auth:** Merchant (OWNER or ADMIN)
-
-**Description:** Returns paginated list of customer reviews left for the merchant's outlets.
-
-**Response (paginated):**
-```json
-{
-  "count": 42,
-  "next": "/api/merchant/reviews/?page=2",
-  "previous": null,
-  "results": [
     {
-      "id": 1,
-      "customer_name": "Алишер К.",
-      "rating": 5,
-      "comment": "Отличное обслуживание!",
-      "outlet_id": 1,
-      "outlet_name": "Центральный филиал",
-      "deal_title": "Скидка 20% на пиццу",
-      "created_at": "2026-06-12T14:00:00Z",
-      "is_replied": false,
-      "reply": null
+      "date":            "2026-06-07",   // str YYYY-MM-DD
+      "revenue":         1800000,        // int | null
+      "orders":          12,             // int
+      "discount_amount": 360000          // int | null
+    }
+  ]
+}
+```
+
+### HTTP status codes
+| Code | Condition |
+|------|-----------|
+| `200` | OK |
+| `400` | Invalid date format |
+| `403` | `outlet_id` does not belong to caller's partner |
+
+---
+
+## 3. `GET /api/merchant/analytics/traffic/`
+
+### Permission
+`MerchantSchema` — OWNER or ADMIN
+
+### Query params
+Same as `analytics/sales/`: `from`, `to`, `outlet_id`.
+
+### Prerequisite
+Requires an analytics event model or an existing analytics tracking mechanism in the customer mobile app. Minimum viable implementation: derive `conversions` from `VerificationLog`; derive `views` and `clicks` from a new `AnalyticsEvent` table (or `analytics` app if tracking is added).
+
+### Response body (`data` field)
+```jsonc
+{
+  "total_views":       5340,   // int — SUM of 'page_view' events for partner's offer/profile pages
+  "total_clicks":      1240,   // int — SUM of 'offer_click' events
+  "total_conversions": 87,     // int — COUNT(VerificationLog, status='valid')
+  "conversion_rate":   7.0,    // float — (total_conversions / total_views) * 100, rounded to 1dp
+  "points": [
+    {
+      "date":        "2026-06-07",
+      "views":       780,
+      "clicks":      180,
+      "conversions": 12
     }
   ]
 }
@@ -193,43 +151,169 @@ This document lists API endpoints required by the merchant panel redesign that *
 
 ---
 
-## 6. Reply to Review
+## 4. `GET /api/merchant/analytics/rating/`
 
-**Endpoint:** `POST /api/merchant/reviews/<id>/reply/`
+### Permission
+`MerchantSchema` — OWNER or ADMIN
 
-**Auth:** Merchant (OWNER or ADMIN)
+### Query params
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `outlet_id` | `int` | No | Filter to single outlet |
 
-**Request body:**
-```json
-{ "reply": "Спасибо за ваш отзыв! Рады были вас обслужить." }
+### Logic
+Data source: a `Rating` model (or `VerificationLog.rating` if ratings are stored there) linked to `Outlet`.
+
+```python
+partner_ids = get_user_partner_ids(request.user)
+outlets = Outlet.objects.filter(partner_id__in=partner_ids)
+
+ratings = Rating.objects.filter(outlet__in=outlets)   # or VerificationLog with rating field
+agg = ratings.aggregate(avg=Avg('value'), total=Count('id'))
+
+distribution = (
+    ratings.values('value').annotate(count=Count('id')).order_by('value')
+)
+by_outlet = (
+    ratings.values('outlet_id', 'outlet__name')
+    .annotate(avg_rating=Avg('value'), total_reviews=Count('id'))
+)
 ```
 
-**Response:** Updated review object (same shape as review list item above with `is_replied: true` and `reply` set).
+### Response body (`data` field)
+```jsonc
+{
+  "avg_rating":    4.3,          // float
+  "total_reviews": 126,          // int
+  "distribution": [
+    { "stars": 5, "count": 68 },
+    { "stars": 4, "count": 32 },
+    { "stars": 3, "count": 15 },
+    { "stars": 2, "count": 7  },
+    { "stars": 1, "count": 4  }
+  ],
+  "by_outlet": [
+    {
+      "outlet_id":     1,
+      "outlet_name":   "Центральный филиал",
+      "avg_rating":    4.6,
+      "total_reviews": 74
+    }
+  ]
+}
+```
 
 ---
 
-## 7. Verification Logs — Date Filtering (Enhancement)
+## 5. `GET /api/merchant/reviews/`
 
-**Existing endpoint:** `GET /api/merchant/<outlet_id>/verification-logs`
+### Permission
+`MerchantSchema` — OWNER or ADMIN
 
-**Missing query params:** `?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&search=<str>&status=<valid|invalid|expired|blacklisted>`
+### Query params
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `outlet_id` | `int` | No | Filter to single outlet |
+| `page` | `int` | No | Pagination cursor |
+| `page_size` | `int` | No | Default 20, max 100 |
 
-**Current limitation:** The endpoint returns the last 200 records with no filtering. For the merchant panel to be usable, it needs:
-- Date range filtering (`start_date`, `end_date`)
-- Status filtering
-- Search by customer phone
-- Proper pagination (currently hardcoded to 200 records)
+### Logic
+```python
+partner_ids = get_user_partner_ids(request.user)
+reviews = Review.objects.filter(outlet__partner_id__in=partner_ids).order_by('-created_at')
+if outlet_id:
+    reviews = reviews.filter(outlet_id=outlet_id)
+```
+
+### Response body (paginated)
+```jsonc
+{
+  "count": 42,
+  "next": "/api/merchant/reviews/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id":            1,
+      "customer_name": "Алишер К.",          // str — anonymised display name
+      "rating":        5,                    // int 1–5
+      "comment":       "Отличное место!",    // str | null
+      "outlet_id":     1,                    // int
+      "outlet_name":   "Центральный филиал", // str
+      "deal_title":    "Скидка 20%",         // str | null — OutletSpecialOffer.title at time of visit
+      "created_at":    "2026-06-12T14:00:00Z",
+      "is_replied":    false,                // bool
+      "reply":         null                  // str | null
+    }
+  ]
+}
+```
 
 ---
 
-## Summary Table
+## 6. `POST /api/merchant/reviews/<id>/reply/`
 
-| Endpoint | Method | Priority | Status |
-|----------|--------|----------|--------|
-| `/api/merchant/dashboard/` | GET | HIGH | ❌ Missing |
-| `/api/merchant/analytics/sales/` | GET | HIGH | ❌ Missing |
-| `/api/merchant/analytics/rating/` | GET | MEDIUM | ❌ Missing |
-| `/api/merchant/reviews/` | GET | MEDIUM | ❌ Missing |
-| `/api/merchant/reviews/<id>/reply/` | POST | MEDIUM | ❌ Missing |
-| `/api/merchant/analytics/traffic/` | GET | LOW | ❌ Missing (requires analytics tracking) |
-| `/api/merchant/<outlet_id>/verification-logs` (date filter) | GET | HIGH | ⚠️ Exists, needs enhancement |
+### Permission
+`MerchantSchema` — OWNER or ADMIN. Must verify that `review.outlet.partner_id` is in caller's partner list.
+
+### Request body
+```json
+{ "reply": "Спасибо за ваш отзыв!" }
+```
+
+### Validation
+- `reply`: `CharField(max_length=1000, required=True, allow_blank=False)`
+- Cannot reply twice (if `review.reply` is already set, return `400`)
+
+### Response body (`data` field)
+Full review object (same schema as item in `GET /api/merchant/reviews/`) with `is_replied: true` and `reply` populated.
+
+### HTTP status codes
+| Code | Condition |
+|------|-----------|
+| `200` | Reply saved |
+| `400` | `reply` blank, or review already has a reply |
+| `403` | Review does not belong to caller's partner |
+| `404` | Review `id` not found |
+
+---
+
+## 7. Enhancement: `GET /api/merchant/<outlet_id>/verification-logs` — add filtering & pagination
+
+**Current state:** Returns last 200 records, no filtering, no pagination.
+
+**Required additions:**
+
+### Additional query params
+| Param | Type | Description |
+|-------|------|-------------|
+| `start_date` | `date` YYYY-MM-DD | Filter `timestamp__date >= start_date` |
+| `end_date` | `date` YYYY-MM-DD | Filter `timestamp__date <= end_date` |
+| `status` | `str` choices: `valid,invalid,expired,blacklisted` | Filter by `VerificationLog.status` |
+| `search` | `str` | `icontains` filter on `user__phone` |
+| `page` | `int` | Pagination |
+| `page_size` | `int` | Default 50, max 200 |
+
+### Change response format
+Wrap results in `StandardResultsSetPagination` instead of a plain `{"results": [...]}` list:
+```jsonc
+{
+  "count": 412,
+  "next": "/api/merchant/1/verification-logs?page=2",
+  "previous": null,
+  "results": [ /* VerificationLogEntry */ ]
+}
+```
+
+---
+
+## Dependency map (dcardmerchant-main consumers)
+
+| Endpoint | Consumer file |
+|----------|---------------|
+| `/api/merchant/dashboard/` | `src/api/dashboard.ts` → `src/pages/DashboardPage.tsx` |
+| `/api/merchant/analytics/sales/` | `src/api/mock/analytics.ts` → `src/pages/AnalyticsPage.tsx` |
+| `/api/merchant/analytics/traffic/` | `src/api/mock/analytics.ts` → `src/pages/AnalyticsPage.tsx` |
+| `/api/merchant/analytics/rating/` | `src/api/mock/analytics.ts` → `src/pages/AnalyticsPage.tsx` |
+| `/api/merchant/reviews/` | `src/api/mock/reviews.ts` → `src/pages/AnalyticsPage.tsx` (ReviewsDialog) |
+| `/api/merchant/reviews/<id>/reply/` | `src/api/mock/reviews.ts` → `src/pages/AnalyticsPage.tsx` |
+| `/api/merchant/<outlet_id>/verification-logs` (enhanced) | `src/api/verificationLogs.ts` → `src/pages/OrdersPage.tsx` |
