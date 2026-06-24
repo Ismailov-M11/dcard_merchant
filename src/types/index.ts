@@ -247,5 +247,23 @@ export interface Notification {
   body: string;
   is_read: boolean;
   created_at: string;
-  type: 'deal' | 'order' | 'review' | 'system';
+  // backend field: cashback | daily_bonus | subscription | partner_promo | system | other
+  category: string;
+}
+
+export type VerificationStatus = 'valid' | 'invalid' | 'expired' | 'blacklisted';
+
+export interface VerificationLog {
+  verification_id: string;
+  user: string;           // customer phone
+  plan: string | null;
+  special_offer: string | null;
+  special_offer_id: number | null;
+  discount_percent: number;
+  status: VerificationStatus;
+  timestamp: string;
+  merchant_staff: string | null;
+  // added client-side from outlet context
+  outlet_id: number;
+  outlet_name: string;
 }
